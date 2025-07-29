@@ -1,0 +1,13 @@
+{
+  "version.label": "下一版本",
+  "sidebar.tutorialSidebar.category.Introduction": "介绍",
+  "sidebar.tutorialSidebar.category.Audio": "音频",
+  "sidebar.tutorialSidebar.category.Video": "视频",
+  "sidebar.tutorialSidebar.category.Filtering": "滤镜处理",
+  "sidebar.tutorialSidebar.category.Utilities": "实用工具",
+  "sidebar.tutorialSidebar.category.Miscellaneous": "其他",
+  "sidebar.tutorialSidebar.category.Encoders": "编码器",
+  "sidebar.tutorialSidebar.category.Hardware Encoders": "硬件编码器",
+  "sidebar.tutorialSidebar.category.Lossless": "无损编码",
+  "sidebar.tutorialSidebar.category.Lossy": "有损编码"
+}

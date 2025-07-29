@@ -1,0 +1,66 @@
+# 中文用户词典 - 编解码器相关术语
+# 格式：词语 词性 权重
+
+# 编解码器
+AV1 n 100
+H.264 n 100
+H.265 n 100
+HEVC n 100
+VP9 n 100
+VP8 n 100
+x264 n 100
+x265 n 100
+SVT-AV1 n 100
+rav1e n 100
+aomenc n 100
+libaom n 100
+
+# 音频编解码器
+AAC n 100
+FLAC n 100
+MP3 n 100
+Opus n 100
+Vorbis n 100
+
+# 视频处理
+编码 v 90
+解码 v 90
+转码 v 90
+压缩 v 90
+滤镜 n 90
+降噪 v 90
+去色带 v 90
+锐化 v 90
+缩放 v 90
+
+# 技术术语
+比特率 n 90
+帧率 n 90
+分辨率 n 90
+色彩空间 n 90
+色度采样 n 90
+量化 v 90
+预测 v 90
+变换 v 90
+熵编码 v 90
+
+# 工具和软件
+FFmpeg n 100
+VapourSynth n 100
+Avisynth n 100
+Handbrake n 100
+MKVToolNix n 100
+MediaInfo n 100
+
+# 容器格式
+MP4 n 90
+MKV n 90
+WebM n 90
+AVI n 90
+MOV n 90
+
+# 质量评估
+PSNR n 90
+SSIM n 90
+VMAF n 90
+LPIPS n 90

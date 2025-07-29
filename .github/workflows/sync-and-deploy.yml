@@ -1,0 +1,303 @@
+name: Sync, Translate and Deploy
+
+on:
+  schedule:
+    # 每天检查一次上游更新 (UTC时间)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      sync_mode:
+        description: '同步模式'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - 'auto'
+          - 'force_sync'
+          - 'full_translate'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  models: read
+  pull-requests: write
+
+jobs:
+  sync-and-translate:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.sync.outputs.has_changes }}
+      files_to_translate: ${{ steps.collect-files.outputs.files_to_translate }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and sync
+        id: sync
+        run: |
+          # 添加上游仓库
+          git remote add upstream https://github.com/av1-community-contributors/codec-wiki.git || true
+          git fetch upstream
+          
+          # 获取当前HEAD
+          current_head=$(git rev-parse HEAD)
+          
+          # 根据模式决定是否同步
+          if [ "${{ github.event.inputs.sync_mode }}" = "auto" ]; then
+            # 自动模式：检查是否有上游变化
+            upstream_head=$(git rev-parse upstream/main)
+            if [ "$current_head" != "$upstream_head" ]; then
+              echo "检测到上游变化，开始同步..."
+              git merge upstream/main --no-edit
+              git push origin main
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "没有上游变化"
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+            fi
+          elif [ "${{ github.event.inputs.sync_mode }}" = "force_sync" ]; then
+            # 强制同步模式
+            echo "强制同步上游..."
+            git merge upstream/main --no-edit
+            git push origin main
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            # full_translate 模式：不同步，直接标记有变化
+            echo "全量翻译模式，跳过同步"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect files to translate
+        id: collect-files
+        run: |
+          if [ "${{ github.event.inputs.sync_mode }}" = "full_translate" ]; then
+            # 全量翻译：收集所有文档文件
+            echo "收集所有文档文件进行翻译..."
+            files=$(find docs -name "*.mdx" -o -name "*.md" | grep -v "docs/zh/" | sort)
+          else
+            # 增量翻译：只翻译变更的文件
+            echo "收集变更的文档文件..."
+            current_head=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)
+            files=$(git diff --name-only $current_head..HEAD | grep -E "^docs/.*\.(mdx|md)$" | grep -v "docs/zh/" || true)
+          fi
+          
+          if [ -n "$files" ]; then
+            # 转换为 JSON 数组格式
+            json_files="["
+            first=true
+            for file in $files; do
+              if [ "$first" = true ]; then
+                first=false
+              else
+                json_files="$json_files,"
+              fi
+              # 生成输出路径
+              output_path=$(echo "$file" | sed 's|^docs/|i18n/zh/docusaurus-plugin-content-docs/current/|')
+              json_files="$json_files{\"input\":\"$file\",\"output\":\"$output_path\"}"
+            done
+            json_files="$json_files]"
+            
+            echo "files_to_translate=$json_files" >> $GITHUB_OUTPUT
+            echo "找到 $(echo "$files" | wc -l) 个文件需要翻译"
+          else
+            echo "files_to_translate=[]" >> $GITHUB_OUTPUT
+            echo "没有文件需要翻译"
+          fi
+
+  translate-docs:
+    needs: sync-and-translate
+    if: needs.sync-and-translate.outputs.has_changes == 'true' && needs.sync-and-translate.outputs.files_to_translate != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file: ${{ fromJson(needs.sync-and-translate.outputs.files_to_translate) }}
+      max-parallel: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if file exists
+        id: check-file
+        run: |
+          if [ -f "${{ matrix.file.input }}" ]; then
+            echo "file-exists=true" >> $GITHUB_OUTPUT
+            echo "文件存在: ${{ matrix.file.input }}"
+          else
+            echo "file-exists=false" >> $GITHUB_OUTPUT
+            echo "文件不存在: ${{ matrix.file.input }}"
+          fi
+
+      - name: Translate document
+        if: steps.check-file.outputs.file-exists == 'true'
+        uses: FidelusAleksander/ai-translate-action@v1.0.0
+        id: translate
+        with:
+          text-file: ${{ matrix.file.input }}
+          target-language: "Chinese"
+          model: "deepseek-v3"
+          custom-instructions: |
+            You are a professional Chinese native translator specialized in video encoding and multimedia technology content who needs to fluently translate text into Chinese.
+            
+            ## Translation Rules
+            1. Output only the translated content, without explanations or additional content
+            2. Maintain all technical terminology, programming language syntax, and code snippets exactly as in the original
+            3. If the text contains HTML tags or MDX components, preserve their structure and placement while maintaining fluency
+            4. Preserve product names, company names, and technology abbreviations in their original form (e.g., AV1, HEVC, x264, FFmpeg)
+            5. Keep all UI elements, button names, and menu items as they appear in localized software when available
+            6. Translate technical concepts accurately while preserving their technical meaning
+            7. For video encoding terminology, use established Chinese translations:
+               - "编码器" for encoder
+               - "解码器" for decoder  
+               - "编解码器" for codec
+               - "比特率" for bitrate
+               - "帧率" for framerate
+               - "分辨率" for resolution
+               - "质量" for quality
+               - "压缩" for compression
+               - "无损" for lossless
+               - "有损" for lossy
+               - "滤镜" for filter
+               - "预设" for preset
+               - "参数" for parameter
+               - "算法" for algorithm
+               - "硬件加速" for hardware acceleration
+            8. Maintain the original formatting, including frontmatter, code blocks, and markdown syntax
+            9. Do not translate file paths, URLs, or command-line parameters
+            10. Keep mathematical formulas and technical specifications in their original form
+
+      - name: Create output directory and save translation
+        if: steps.translate.outputs.translated-text != ''
+        run: |
+          mkdir -p "$(dirname "${{ matrix.file.output }}")"
+          echo "$TRANSLATED_TEXT" > "${{ matrix.file.output }}"
+        env:
+          TRANSLATED_TEXT: ${{ steps.translate.outputs.translated-text }}
+
+      - name: Upload translation artifact
+        if: steps.translate.outputs.translated-text != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: translation-${{ strategy.job-index }}
+          path: ${{ matrix.file.output }}
+
+  commit-and-deploy:
+    needs: [sync-and-translate, translate-docs]
+    if: always() && needs.sync-and-translate.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all translation artifacts
+        if: needs.translate-docs.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: translation-*
+          path: translations
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Copy translations to i18n structure and update category files
+        if: needs.translate-docs.result == 'success'
+        run: |
+          # 创建 i18n 目录结构
+          mkdir -p i18n/zh/docusaurus-plugin-content-docs/current
+          
+          # 复制翻译文件到正确的 i18n 目录
+          if [ -d "translations" ] && [ "$(find translations -name '*.mdx' -o -name '*.md' | wc -l)" -gt 0 ]; then
+            echo "复制中文文档到 i18n 目录..."
+            find translations -name "*.mdx" -o -name "*.md" | while read file; do
+              # 获取相对路径
+              rel_path=$(echo "$file" | sed 's|^translations/i18n/zh/docusaurus-plugin-content-docs/current/||')
+              target_dir="i18n/zh/docusaurus-plugin-content-docs/current/$(dirname "$rel_path")"
+              mkdir -p "$target_dir"
+              cp "$file" "$target_dir/"
+            done
+            echo "中文文档已复制到 i18n/zh/docusaurus-plugin-content-docs/current/"
+            
+            # 更新分类文件
+            for category_dir in i18n/zh/docusaurus-plugin-content-docs/current/*/; do
+              if [ -d "$category_dir" ]; then
+                category_name=$(basename "$category_dir")
+                category_file="$category_dir/_category_.json"
+                
+                # 创建或更新分类文件
+                case "$category_name" in
+                  "audio") label="音频编解码器" ;;
+                  "colorimetry") label="色彩学" ;;
+                  "data") label="数据压缩" ;;
+                  "encoders") label="编码器" ;;
+                  "encoders_hw") label="硬件编码器" ;;
+                  "filtering") label="滤镜处理" ;;
+                  "images") label="图像格式" ;;
+                  "introduction") label="介绍" ;;
+                  "metrics") label="质量评估指标" ;;
+                  "subtitles") label="字幕" ;;
+                  "utilities") label="实用工具" ;;
+                  "video") label="视频编解码器" ;;
+                  *) label="$category_name" ;;
+                esac
+                
+                echo "{\"label\": \"$label\", \"position\": 1, \"link\": {\"type\": \"generated-index\"}}" > "$category_file"
+              fi
+            done
+          fi
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit translations
+        if: needs.translate-docs.result == 'success'
+        run: |
+          git add i18n/zh/
+          if git diff --staged --quiet; then
+            echo "没有翻译更改需要提交"
+          else
+            git commit -m "docs: 自动更新中文翻译
+
+            - 同步上游仓库更改
+            - 自动翻译新增和修改的文档
+            - 更新中文文档分类标签"
+            git push origin main
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Docusaurus site
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

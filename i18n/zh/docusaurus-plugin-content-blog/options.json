@@ -1,0 +1,19 @@
+{
+  "title": "博客",
+  "description": "Codec Wiki 中文博客",
+  "sidebar.title": "最近文章",
+  "sidebar.readMore": "阅读更多",
+  "sidebar.readMoreCount": "查看全部 {count} 篇文章",
+  "paginator.navAriaLabel": "博客文章分页导航",
+  "paginator.newerEntries": "较新的文章",
+  "paginator.olderEntries": "较旧的文章",
+  "post.readMore": "阅读更多",
+  "post.readMoreLabel": "阅读 {title} 的全文",
+  "post.readingTime.plurals": "阅读需 {readingTime} 分钟",
+  "post.paginator.navAriaLabel": "博客文章分页导航",
+  "post.paginator.newerPost": "较新一篇",
+  "post.paginator.olderPost": "较旧一篇",
+  "tagTitle": "共有 {nPosts} 篇文章标记为「{tagName}」",
+  "archive.title": "历史文章",
+  "archive.description": "历史文章"
+}

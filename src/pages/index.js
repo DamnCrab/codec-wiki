@@ -3,6 +3,7 @@ import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
+import Translate, { translate } from "@docusaurus/Translate";
 
 import styles from "./index.module.css";
 
@@ -18,7 +19,12 @@ function HomepageHeader() {
             className="button button--secondary button--lg"
             to="/docs/introduction/prologue"
           >
-            Start learning!
+            <Translate
+              id="homepage.startLearning"
+              description="The homepage start learning button label"
+            >
+              Start learning!
+            </Translate>
           </Link>
         </div>
       </div>
@@ -30,8 +36,16 @@ export default function Home() {
   const { siteConfig } = useDocusaurusContext();
   return (
     <Layout
-      title={`${siteConfig.title}`}
-      description={`${siteConfig.tagline}`}
+      title={translate({
+        id: "homepage.title",
+        message: siteConfig.title,
+        description: "The homepage title",
+      })}
+      description={translate({
+        id: "homepage.tagline",
+        message: siteConfig.tagline,
+        description: "The homepage tagline",
+      })}
     >
       <HomepageHeader />
     </Layout>

@@ -71,12 +71,24 @@ const config = {
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
 
-  // Even if you don't use internalization, you can use this field to set useful
-  // metadata like html lang. For example, if your site is Chinese, you may want
-  // to replace "en" with "zh-Hans".
+  // 国际化配置 - 支持英文和中文
   i18n: {
     defaultLocale: "en",
-    locales: ["en"],
+    locales: ["en", "zh"],
+    localeConfigs: {
+      en: {
+        label: "English",
+        direction: "ltr",
+        htmlLang: "en-US",
+        calendar: "gregory",
+      },
+      zh: {
+        label: "中文",
+        direction: "ltr",
+        htmlLang: "zh-CN",
+        calendar: "gregory",
+      },
+    },
   },
 
   presets: [
@@ -90,6 +102,8 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             "https://github.com/av1-community-contributors/codec-wiki/tree/main",
+          // 为中文文档设置编辑链接
+          editLocalizedFiles: true,
         },
         blog: {
           showReadingTime: true,
@@ -115,7 +129,24 @@ const config = {
 
   plugins: [
     "plugin-image-zoom",
-    "@easyops-cn/docusaurus-search-local",
+    [
+      "@easyops-cn/docusaurus-search-local",
+      {
+        hashed: true,
+        language: ["en", "zh"],
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+        indexBlog: true,
+        indexDocs: true,
+        indexPages: false,
+        docsRouteBasePath: "/docs",
+        blogRouteBasePath: "/blog",
+        zhUserDict: "dict.txt",
+        zhUserDictPath: "zhUserDict.txt",
+        searchContextByPaths: ["docs", "blog"],
+        useAllContextsWithNoSearchContext: true,
+      },
+    ],
   ],
 
   themeConfig:
@@ -131,6 +162,20 @@ const config = {
             position: "left",
           },
           { to: "blog", label: "Blog", position: "left" },
+          {
+            type: "localeDropdown",
+            position: "right",
+            dropdownItemsAfter: [
+              {
+                type: "html",
+                value: '<hr style="margin: 0.3rem 0;">',
+              },
+              {
+                href: "https://github.com/av1-community-contributors/codec-wiki/issues/new?assignees=&labels=translation&template=translation-request.md&title=Translation+Request",
+                label: "Help Us Translate",
+              },
+            ],
+          },
           {
             href: "https://discord.gg/bbQD5MjDr3",
             className: "header-discord-link",
