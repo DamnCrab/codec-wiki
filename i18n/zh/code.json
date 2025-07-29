@@ -1,7 +1,17 @@
 {
-  "title": "编解码器百科",
-  "tagline": "您的编码技术全方位指南",
-  "homepage.title": "编解码器百科",
-  "homepage.tagline": "您的编码技术全方位指南",
-  "homepage.startLearning": "开始学习！"
+  "title": {
+    "message": "编解码器百科"
+  },
+  "tagline": {
+    "message": "您的编码技术全方位指南"
+  },
+  "homepage.title": {
+    "message": "编解码器百科"
+  },
+  "homepage.tagline": {
+    "message": "您的编码技术全方位指南"
+  },
+  "homepage.startLearning": {
+    "message": "开始学习！"
+  }
 }

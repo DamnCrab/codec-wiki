@@ -1,14 +1,38 @@
 {
-  "link.title.Getting Started": "入门指南",
-  "link.title.Filtering": "滤镜处理",
-  "link.title.More": "更多",
-  "link.item.label.Prologue": "序言",
-  "link.item.label.AAC": "AAC",
-  "link.item.label.Vapoursynth": "Vapoursynth",
-  "link.item.label.Deband": "去色带",
-  "link.item.label.Denoise": "降噪",
-  "link.item.label.Contribute": "贡献",
-  "link.item.label.Terms of Use": "使用条款",
-  "link.item.label.Privacy Policy": "隐私政策",
-  "copyright.text": "版权所有 © 2024 Gianni Rosato 及贡献者。内容采用 CC BY-SA 4.0 许可证。使用 Docusaurus 构建。"
+  "link.title.Getting Started": {
+    "message": "入门指南"
+  },
+  "link.title.Filtering": {
+    "message": "滤镜处理"
+  },
+  "link.title.More": {
+    "message": "更多"
+  },
+  "link.item.label.Prologue": {
+    "message": "序言"
+  },
+  "link.item.label.AAC": {
+    "message": "AAC"
+  },
+  "link.item.label.Vapoursynth": {
+    "message": "Vapoursynth"
+  },
+  "link.item.label.Deband": {
+    "message": "去色带"
+  },
+  "link.item.label.Denoise": {
+    "message": "降噪"
+  },
+  "link.item.label.Contribute": {
+    "message": "贡献"
+  },
+  "link.item.label.Terms of Use": {
+    "message": "使用条款"
+  },
+  "link.item.label.Privacy Policy": {
+    "message": "隐私政策"
+  },
+  "copyright.text": {
+    "message": "版权所有 © 2024 Gianni Rosato 及贡献者。内容采用 CC BY-SA 4.0 许可证。使用 Docusaurus 构建。"
+  }
 }
