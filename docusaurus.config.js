@@ -109,6 +109,7 @@ const config = {
           showReadingTime: true,
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
+          onInlineAuthors: 'ignore',
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),

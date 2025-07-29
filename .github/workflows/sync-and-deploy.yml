@@ -121,7 +121,8 @@ jobs:
     strategy:
       matrix:
         file: ${{ fromJson(needs.sync-and-translate.outputs.files_to_translate) }}
-      max-parallel: 5
+      max-parallel: 1  # 降低并发数以避免速率限制
+      fail-fast: false  # 即使某个任务失败也继续其他任务
     
     steps:
       - name: Checkout repository
@@ -138,10 +139,19 @@ jobs:
             echo "文件不存在: ${{ matrix.file.input }}"
           fi
 
+      - name: Add random delay to avoid rate limiting
+        if: steps.check-file.outputs.file-exists == 'true'
+        run: |
+          # 添加随机延迟 (1-5秒) 来避免速率限制
+          delay=$((RANDOM % 5 + 1))
+          echo "等待 $delay 秒以避免速率限制..."
+          sleep $delay
+
       - name: Translate document
         if: steps.check-file.outputs.file-exists == 'true'
         uses: FidelusAleksander/ai-translate-action@v1.0.0
         id: translate
+        continue-on-error: true  # 允许单个翻译失败而不影响整个工作流
         with:
           text-file: ${{ matrix.file.input }}
           target-language: "Chinese"
@@ -176,16 +186,85 @@ jobs:
             9. Do not translate file paths, URLs, or command-line parameters
             10. Keep mathematical formulas and technical specifications in their original form
 
+      - name: Retry translation if failed
+        if: steps.check-file.outputs.file-exists == 'true' && steps.translate.outcome == 'failure'
+        run: |
+          echo "第一次翻译失败，等待 10 秒后使用备用模型重试..."
+          sleep 10
+
+      - name: Retry translation with fallback model
+        if: steps.check-file.outputs.file-exists == 'true' && steps.translate.outcome == 'failure'
+        uses: FidelusAleksander/ai-translate-action@v1.0.0
+        id: translate-retry
+        continue-on-error: true
+        with:
+          text-file: ${{ matrix.file.input }}
+          target-language: "Chinese"
+          model: "gpt-4o-mini"  # 使用备用模型
+          custom-instructions: |
+            You are a professional Chinese native translator specialized in video encoding and multimedia technology content who needs to fluently translate text into Chinese.
+            
+            ## Translation Rules
+            1. Output only the translated content, without explanations or additional content
+            2. Maintain all technical terminology, programming language syntax, and code snippets exactly as in the original
+            3. If the text contains HTML tags or MDX components, preserve their structure and placement while maintaining fluency
+            4. Preserve product names, company names, and technology abbreviations in their original form (e.g., AV1, HEVC, x264, FFmpeg)
+            5. Keep all UI elements, button names, and menu items as they appear in localized software when available
+            6. Translate technical concepts accurately while preserving their technical meaning
+            7. For video encoding terminology, use established Chinese translations:
+               - "编码器" for encoder
+               - "解码器" for decoder  
+               - "编解码器" for codec
+               - "比特率" for bitrate
+               - "帧率" for framerate
+               - "分辨率" for resolution
+               - "质量" for quality
+               - "压缩" for compression
+               - "无损" for lossless
+               - "有损" for lossy
+               - "滤镜" for filter
+               - "预设" for preset
+               - "参数" for parameter
+               - "算法" for algorithm
+               - "硬件加速" for hardware acceleration
+            8. Maintain the original formatting, including frontmatter, code blocks, and markdown syntax
+            9. Do not translate file paths, URLs, or command-line parameters
+            10. Keep mathematical formulas and technical specifications in their original form
+
+      - name: Wait before retry
+        if: steps.check-file.outputs.file-exists == 'true' && steps.translate.outcome == 'failure'
+        run: |
+          echo "第一次翻译失败，等待 10 秒后重试..."
+          sleep 10
+
       - name: Create output directory and save translation
-        if: steps.translate.outputs.translated-text != ''
+        if: steps.translate.outputs.translated-text != '' || steps.translate-retry.outputs.translated-text != ''
         run: |
           mkdir -p "$(dirname "${{ matrix.file.output }}")"
-          echo "$TRANSLATED_TEXT" > "${{ matrix.file.output }}"
+          # 使用成功的翻译结果
+          if [ -n "${{ steps.translate.outputs.translated-text }}" ]; then
+            echo "使用主要模型 (deepseek-v3) 的翻译结果"
+            echo "$TRANSLATED_TEXT" > "${{ matrix.file.output }}"
+          elif [ -n "${{ steps.translate-retry.outputs.translated-text }}" ]; then
+            echo "使用备用模型 (gpt-4o-mini) 的翻译结果"
+            echo "$TRANSLATED_TEXT_RETRY" > "${{ matrix.file.output }}"
+          fi
         env:
           TRANSLATED_TEXT: ${{ steps.translate.outputs.translated-text }}
+          TRANSLATED_TEXT_RETRY: ${{ steps.translate-retry.outputs.translated-text }}
+
+      - name: Log translation status
+        run: |
+          if [ -n "${{ steps.translate.outputs.translated-text }}" ]; then
+            echo "✅ 文件 ${{ matrix.file.input }} 使用 deepseek-v3 翻译成功"
+          elif [ -n "${{ steps.translate-retry.outputs.translated-text }}" ]; then
+            echo "⚠️ 文件 ${{ matrix.file.input }} 使用备用模型 gpt-4o-mini 翻译成功"
+          else
+            echo "❌ 文件 ${{ matrix.file.input }} 翻译失败"
+          fi
 
       - name: Upload translation artifact
-        if: steps.translate.outputs.translated-text != ''
+        if: steps.translate.outputs.translated-text != '' || steps.translate-retry.outputs.translated-text != ''
         uses: actions/upload-artifact@v4
         with:
           name: translation-${{ strategy.job-index }}
