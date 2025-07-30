@@ -1,0 +1,99 @@
+---
+title: Kvazaar
+sidebar_position: 11
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Kvazaar
+
+[Kvazaar](https://github.com/ultravideo/kvazaar) 是一款开源的 [H.265/HEVC](/docs/video/HEVC) 软件编码器，采用C语言编写，由 [Ultra Video Group](https://ultravideo.fi/) 开发，基于BSD 3-clause许可证发布。
+
+同团队开发的 [uvg266](/docs/encoders/uvg266) 以Kvazaar为基础实现了 [VVC](/docs/video/VVC) 编解码器编码功能。
+
+通常认为 [x265](/docs/encoders/x265) 在编码效率与输出视频质量方面表现更优。
+
+## FFmpeg支持
+
+Kvazaar可通过 ``libkvazaar`` 集成到 [FFmpeg](../utilities/ffmpeg.mdx) 中使用，执行 ``ffmpeg -h encoder=libkvazaar`` 可检查是否支持。非FFmpeg标准的Kvazaar参数需通过 ``-kvazaar-params`` 传递。
+
+注意：大多数预编译版本不包含此编码器，可能需要下载"完整版"构建包。
+
+## 支持的色彩空间
+
+Kvazaar支持以下色彩空间格式：
+
+| 格式             | 色度抽样        | 位深支持          |
+|------------------|:-------------:|------------------|
+| YUV420P          | 4:2:0         | 8-bit            |
+| YUV420P10LE      | 4:2:0         | 10-bit*          |
+
+*10-bit支持需要在CMake编译时设置特定标志
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS" default>
+        Arch Linux用户可通过官方仓库安装`kvazaar`，或通过AUR获取`kvazaar-git`。
+
+        Ultra Video Group仅通过[AppVeyor CI](https://ci.appveyor.com/project/Ultravideo/kvazaar)提供预编译二进制包（保存期限一个月），多数情况下需要自行编译：
+
+        ### Autotools编译
+
+        0. 需预先安装GNU Automake、Autoconf、Libtool和M4工具链
+
+        1. 克隆仓库及子模块：
+        ```bash
+        git clone --recursive https://github.com/ultravideo/kvazaar.git
+        cd kvazaar
+        ./autogen.sh
+        ./configure
+        make -j$(nproc)
+        ```
+
+        3. 编译产物位于`src`目录，或执行`make install`安装（可能需要权限提升）
+
+        ### CMake编译（支持10-bit）
+
+        默认仅支持8-bit编码，需通过CMake启用10-bit支持：
+
+        ```bash
+        git clone --recursive https://github.com/ultravideo/kvazaar.git
+        cd kvazaar/build
+        cmake .. -DCMAKE_C_FLAGS="-DKVZ_BIT_DEPTH=10" # 10-bit编译标志
+        make -j$(nproc)
+        ```
+
+        注意：由于开发者仅针对8-bit编码进行了SIMD优化，10-bit HEVC编码速度显著降低，且该实现可能存在稳定性问题。
+    </TabItem>
+    <TabItem value="wind" label="Windows">
+        推荐通过[MSYS2](https://msys2.org/)中的MinGW-W64进行编译。**强烈建议使用Clang替代GCC**，因自2012年起已知的GCC问题会导致AVX2优化在MinGW环境下被禁用（执行autoconf时需添加`CC=clang ./configure`参数）。
+
+        ### MSYS2环境
+
+        0. 请确保已从[MSYS2官网](https://www.msys2.org/)完成安装
+
+        1. 启动UCRT64终端，使用`pacman`安装编译依赖项
+
+        3. 后续步骤与类Unix系统相同，参考"Linux & macOS"标签页说明
+    </TabItem>
+</Tabs>
+
+## 使用示例
+
+以下是Kvazaar独立使用示例：
+
+```bash title="Y4M输入文件，QP值20，原始265码流输出"
+kvazaar -i input.y4m --input-file-format y4m --qp 20 -o output.265
+```
+
+```bash title="慢速预设，CRF 20，Y4M输入"
+kvazaar -i input.y4m --input-file-format y4m --qp 20 --preset slow -o output.265
+```
+
+以下命令通过YUV4MPEG管道读取数据（而非直接文件输入），��用于FFmpeg输出直接传输至Kvazaar的场景：
+
+```bash title="FFmpeg管道传输"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | kvazaar -i - --input-file-format y4m --qp 20 --preset slow -o output.265
+```

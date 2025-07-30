@@ -1,0 +1,138 @@
+---
+title: 滤镜基础
+sidebar_position: 3
+---
+
+# Vapoursynth滤镜基础
+
+## 滤镜简介
+
+要进行视频滤镜处理，我们需要使用各类滤镜。Vapoursynth内置了一些基础滤镜，但社区开发的大量实用滤镜能为我们提供更强大的功能。
+
+例如，我们将使用[vs-tools](https://github.com/Jaded-Encoding-Thaumaturgy/vs-tools)中的部分功能。对于Arch用户，推荐通过AUR安装`vapoursynth-plugin-vstools-git`包。其他操作系统用户可使用[vs-jet工具](https://github.com/Jaded-Encoding-Thaumaturgy/vs-jet)一次性安装所有JET插件。注意这些插件需要Python环境——如果您已安装Vapoursynth则应该已具备。您可能已注意到，所有Vapoursynth脚本都使用Python语法。虽然掌握Python有助于实现高级技巧，但编写Vapoursynth脚本并不强制要求Python知识。
+
+## 滤镜顺序
+
+应用滤镜的顺序至关重要。某些操作必须在流程开始时进行，而有些则适合放在滤镜链的后期。下图展示了常见滤镜操作的推荐顺序：
+
+![滤镜处理链](/img/vs2.webp)
+
+初次接触可能觉得复杂，这很正常。我们将逐步学习每个处理步骤及其适用场景。
+
+## 位深与色彩特性
+
+通常视频处理的第一步是设置正确的[矩阵/基色/转换特性](../colorimetry/intro.mdx)并转换为16位。色彩特性参数对保证色彩准确性至关重要，而16位处理能提升滤镜质量并减少伪影。
+
+当前推荐使用`vstools.initialize_clip`函数处理这两项任务。该函数会自动确保色彩特性设置，并在需要时通过适当抖动转换为16位：
+
+```python
+import vapoursynth as vs
+core = vs.core
+clip = core.lsmas.LWLibavSource(source="myinput.mkv")
+
+import vstools
+clip = vstools.initialize_clip(clip)
+
+clip.set_output(0)
+```
+
+若视频已包含色彩特性数据，`initialize_clip`会保留原数据，否则将根据分辨率自动推断（通常准确）。但某些情况下（如4K视频实为1080P放大）需要手动指定：
+
+```python
+from vstools import Primaries, Matrix, Transfer
+clip = vstools.initialize_clip(clip, primaries=Primaries.BT709, matrix=Matrix.BT709, transfer=Transfer.BT709)
+```
+
+配套函数`finalize_clip`默认会将视频转为10位（带抖动处理），若为有限色彩范围则裁剪像素值（通常由播放器处理，提前处理可优化编码效率）。该函数也支持通过`bits`参数输出8位。
+
+基础脚本模板如下：
+
+```python
+import vapoursynth as vs
+core = vs.core
+clip = core.lsmas.LWLibavSource(source="myinput.mkv")
+
+import vstools
+clip = vstools.initialize_clip(clip)
+//
+// 在此区域添加滤镜
+//
+clip = vstools.finalize_clip(clip)
+
+clip.set_output(0)
+```
+
+## 画面裁剪
+
+![截图示例](/img/crop_1.jpg)
+
+遇到视频带黑边时，通常需要"裁剪"去除。首先需确定各边裁剪像素数，vs-preview的裁剪工具（位于右下角"Misc"区域）可实时调试数值而无需重载脚本。
+
+![裁剪工具](/img/crop_tool.webp)
+
+开启工具后调整各边数值直至黑边消失。YUV420视频（最常见格式）的裁剪值必须为2的倍数。注意左右/上下黑边宽度可能不同，需分别检查。
+
+![缩放工具](/img/zoom_tool.avif)
+
+vs-preview的缩放工具可辅助验证数值准确性。确定数值后点击"Copy cropping command"复制命令到脚本：
+
+```python
+clip = clip.std.Crop(0, 0, 138, 138)
+```
+
+操作后记得关闭vs-preview的裁剪工具，按Ctrl+R重载预览，黑边即被移除。
+
+![处理后截图](/img/crop_2.jpg)
+
+## 分辨率缩放
+
+缩放是改变视频分辨率的过程。虽然"高分辨率更好"是普遍认知，但我们通常避免放大——这只会增加文件体积而不会提升真实画质。但必要时仍需缩放处理，此时需选择高质���缩放算法。
+
+本部分将介绍[slow.pics](https://slow.pics/)这款截图对比工具。
+
+Vapoursynth内置缩放器示例：
+```python
+clip = clip.resize.Bicubic(1920, 1080)  # 最常用，快速但锐度一般
+clip = clip.resize.Lanczos(1920, 1080)  # 更锐利但可能产生振铃
+clip = clip.resize.Spline36(1920, 1080) # 折中方案
+```
+
+通过插件可使用更高级缩放器：
+```python
+clip = vskernels.Catrom().scale(clip, 1920, 1080)  # 改进版双三次，锐度与振铃平衡
+clip = vskernels.Catrom(sigmoid=True).scale(clip, 1920, 1080)  # 使用sigmoid函数减少振铃
+clip = vskernels.Hermite(linear=True).scale(clip, 1920, 1080)  # 线性光处理减少振铃但可能使线条变细
+clip = vsscale.SSIM().scale(clip, 1920, 1080)  # 基于SSIM指标优化细节保留
+```
+
+[对比示例1](https://slow.pics/c/mb5Rm3k3)展示了不同缩放器效果，当前推荐动画使用`Catrom(sigmoid=True)`，实拍使用`SSIM`，部分用户可能偏好动画使用`Hermite(linear=True)`。
+
+高质量放大方案：
+```python
+clip = vskernels.EwaLanczos().scale(clip, 3840, 2160)  # 高锐度适合实拍
+clip = vsaa.Nnedi3().scale(clip, 3840, 2160)  # 神经网络放大，通用性好
+clip = vsscale.Waifu2x().scale(clip, 3840, 2160)  # 专为动画优化的AI放大
+```
+[放大对比](https://slow.pics/c/CpISIk1z)显示，推荐实拍用`EwaLanczos`，动画用`Waifu2x`。
+
+智能混合缩放器：
+```python
+clip = soifunc.good_resize(clip, 1920, 1080)  # 自动选择最佳算法
+clip = soifunc.good_resize(clip, 1920, 1080, anime=True)  # 动画优化模式
+```
+该函数会根据缩放方向和内容类型自动选择算法，且可能对色度使用不同算法，其内部算法可能随技术发展更新。
+
+## 片段剪辑
+
+有时需要截取视频片段（如仅编码OP）或删除广告片段。Vapoursynth支持Python切片语法：
+
+```python
+clip = clip[1805:3185]  # 截取1805-3184帧（含首不含尾）
+```
+
+若要排除某片段，可截取需保留部分后拼接：
+
+```python
+clip = clip[:1805] + clip[3185:]  # 拼接首段和末段
+clip = clip[3185:] + clip[:1805]  # 颠倒片段顺序
+```

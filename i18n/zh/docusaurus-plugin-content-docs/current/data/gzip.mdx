@@ -1,0 +1,69 @@
+---
+title: gzip
+sidebar_position: 2
+---
+
+# gzip
+
+Gzip是基于DEFLATE算法实现的单文件压缩工具，在Linux和macOS等类Unix系统中广泛使用。它常与[`tar`](../data/tar.mdx)工具配合创建`.tar.gz`归档文件。[ZIP](../data/zip.mdx)和[PNG](../images/PNG.mdx)等格式也采用Deflate算法，但实现效果各有不同。
+
+## 格式解析
+
+ZIP是多文件归档格式，可将多个文件压缩为单个压缩包；而Gzip是单文件格式，仅压缩单个文件。两者都使用DEFLATE压缩算法。ZIP支持加密功能，Gzip则不支持。此外，ZIP文件头包含更丰富的元数据信息。
+
+## 发展历史
+
+要理解gzip格式，需先了解ZIP的发展历程。这部分内容与本站ZIP词条有诸多重合之处。
+
+ZIP格式由Phil Katz开发为开放格式，其实现PKZIP作为共享软件发布。存在一种[受限ZIP变体](http://www.digitalpreservation.gov/formats/fdd/fdd000361.shtml)，被应用于Java的.jar包、微软Office文档格式、开放文档格式(.odt/.ods/.odp)以及电子书EPUB格式中。
+
+1990年左右，Info-ZIP项目诞生，其宗旨是"提供免费、跨平台、高质量的Zip/UnZip工具，兼容PKWARE公司的DOS版PKZIP"(https://infozip.sourceforge.net/)。该项目的成功极大推动了ZIP格式的普及。
+
+1990年代初期，[gzip](../data/gzip.mdx)格式从Info-ZIP工具的Deflate代码衍生而来，旨在替代Unix系统的`compress`工具——后者采用当时受专利保护的LZW算法，存在法律风险。虽然Phil Katz对某些Deflate实现申请了专利，但算法格式本身未被垄断，因此开发者编写了不侵权的Deflate实现。
+
+作为`compress`的替代品，Unix的gzip工具可兼容解压compress生成的数据。得益于DEFLATE算法，gzip压缩率显著优于原版compress，且解压速度极快。它新增CRC-32校验机制确保数据完整性，文件头也比compress格式存储更多元信息（如原始文件名、修改时间等）。
+
+经典的[`tar`](../data/tar.mdx)归档工具支持直接生成`.tar.gz`格式，这是gzip最典型的应用场景。由于tar归档能利用跨文件冗余信息，其压缩效果通常优于单独使用ZIP。`.tar.gz`凭借极高兼容性成为Unix系统最常用的归档格式，但存在更高效的替代方案如[XZ](../data/xz.mdx)、[bzip2](../data/bzip2.mdx)、[brotli](../data/brotli.mdx)、[7-zip](../data/7z.mdx)和[Zstandard](../data/zstd.mdx)。
+
+## 编码指南
+
+### Linux & macOS系统
+
+系统通常已预装gzip工具，可通过终端命令使用：
+
+1. 打开终端
+2. 进入目标目录
+3. 使用`gzip`命令压缩文件：
+```bash
+gzip -7 我的文件.txt
+```
+这将生成`我的文件.txt.gz`，数字7表示压缩等级（1-9，`--fast`对应1，`--best`对应9）
+
+4. 批量压缩多个文件：
+```bash
+gzip -a 文件1.txt 文件2.txt
+```
+
+5. 递归压缩目录：
+```bash
+gzip -r 我的目录/
+```
+
+6. 自定义压缩后缀名：
+```bash
+gzip -S .自定义后缀 我的文件.txt
+```
+
+其他常用参数：
+- `-v` 显示详细信息
+- `-f` 强制覆盖/压缩链接文件
+- `-l` 列出压缩文件信息
+- `-d` 解压文件
+
+完整参数说明可通过`man gzip`查看。
+
+### Windows系统
+
+（待补充）
+
+*注：Mark Adler是美国软件工程师，以Adler-32校验算法、zlib压缩库和gzip工具的共同开发者闻名。他参与过Info-ZIP项目和PNG图像格式开发。本文部分内容参考其[StackOverflow回答](https://stackoverflow.com/questions/20762094/how-are-zlib-gzip-and-zip-related-what-do-they-have-in-common-and-how-are-they)*

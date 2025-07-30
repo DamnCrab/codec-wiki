@@ -1,0 +1,181 @@
+---
+title: SVT-HEVC
+sidebar_position: 10
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# SVT-HEVC
+
+[SVT-HEVC](https://github.com/OpenVisualCloud/SVT-HEVC)（HEVC可扩展视频技术）是由英特尔开发的开源[H.265/HEVC](/docs/video/HEVC)软件编码器，专门设计为**仅支持x86架构**。如名称所示，它是英特尔"[可扩展视频技术](https://www.intel.com/content/www/us/en/developer/articles/technical/scalable-video-technology.html)"项目系列的一部分。
+
+该编码器主要使用C语言编写，部分采用汇编语言，采用**BSD+Patent**双重许可。
+
+:::info
+建议优先使用[x265](/docs/encoders/x265)，因为它在视频质量方面表现更优。
+:::
+
+## FFmpeg集成
+
+SVT-HEVC仅在FFmpeg通过其提供的[插件](https://github.com/OpenVisualCloud/SVT-HEVC/tree/master/ffmpeg_plugin)编译时才可用。否则需要通过`libsvt_hevc`库调用，可通过运行`ffmpeg -h encoder=libsvt_hevc`检查是否可用。
+
+## 支持的色彩空间
+
+SVT-HEVC支持以下色彩空间格式：
+
+| 格式           | 色度采样        | 支持位深        |
+|----------------|:--------------:|---------------|
+| YUV420P        | 4:2:0          | 8-bit         |
+| YUV420P10LE    | 4:2:0          | 10-bit        |
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        从源码构建SVT-HEVC，首先克隆仓库并进入构建目录：
+
+        ```bash title="克隆SVT-HEVC仓库"
+        git clone https://github.com/OpenVisualCloud/SVT-HEVC
+        cd SVT-HEVC/Build/linux
+        ```
+
+        在目录中运行`./build.sh [flags]`进行构建。注意需要CMake 3.5.1或更高版本，以及GCC或Clang编译器。推荐使用Clang进行构建。
+
+        ```bash title="构建发布版本"
+        ./build.sh release
+        ```
+
+        ```bash title="静态构建发布版本"
+        ./build.sh static release
+        ```
+
+        编译生成的二进制文件位于`Bin/Release`目录。
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        待补充。如果您能提供帮助，请参阅我们的[贡献指南](../contribution-guide.mdx)。
+    </TabItem>
+</Tabs>
+
+## 使用方法
+
+### 基础使用
+```bash title="Y4M输入，QP值20，原始265比特流输出"
+SvtHevcEncApp -i input.y4m -q 20 -b output.265
+```
+
+```bash title="预设模式4，CRF值20，Y4M输入"
+SvtHevcEncApp -i input.y4m -q 20 -encMode 4 -b output.265
+```
+
+```bash title="FFmpeg管道输入"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | SvtHevcEncApp -i stdin -q 20 -encMode 4 -b output.265
+```
+
+:::danger
+SVT-HEVC目前无法检测Y4M管道中的EOF（文件结束标志）([问题追踪](https://github.com/OpenVisualCloud/SVT-HEVC/issues/634#issuecomment-1434911798))，编码过程将持续进行直至磁盘空间耗尽。
+目前唯一解决方案是通过`-n`参数手动设置编码帧数。
+:::
+
+### HDR编码
+
+```bash
+SvtHevcEncApp -i input.y4m -q 20 -encMode 4 -hdr -max-cll XXX -max-fall XXX -master-display G(0.265,0.690)B(0.150,0.060)R(0.680,0.320)WP(0.3127,0.3290)L(1000,0.0100) -b output.265
+```
+请根据实际需求调整HDR元数据参数。
+
+### 杜比视界编码
+
+SVT-HEVC支持通过RPU文件进行杜比视界编码（仅限Profile 8.1）：
+```bash
+SvtHevcEncApp -i input.y4m -q 20 -encMode 4 -hdr -dolby-vision-rpu RPUFile.bin -dolby-vision-profile 81 -max-cll XXX -max-fall XXX -master-display G(0.265,0.690)B(0.150,0.060)R(0.680,0.320)WP(0.3127,0.3290)L(1000,0.0100) -b output.265
+```
+请根据实际需求调整HDR元数据参数。
+
+## 完整参数列表
+
+与其他SVT系列产品类似，官方推荐阅读其"用户指南"而非通过`--help`页面查看所有参数说明。
+下表完整复制自GitHub上的[用户指南](https://github.com/OpenVisualCloud/SVT-HEVC/blob/master/Docs/svt-hevc_encoder_user_guide.md)作为备份参考。
+
+| **配置文件参数** | **命令行参数** | **取值范围** | **默认值** | **功能描述** |
+| --- | --- | --- | --- | --- |
+| **通道数** | -nch | [1-6] | 1 | 编码实例数量 |
+| **配置文件路径** | -c | 任意字符串 | null | 配置文件路径 |
+| **输入文件** | -i | 任意字符串 | null | 输入文件路径 |
+| **输出流文件** | -b | 任意字符串 | null | 输出比特流文件路径 |
+| **错误日志** | -errlog | 任意字符串 | stderr | 错误日志输出路径 |
+| **重建帧输出** | -o | 任意字符串 | null | 调试用重建帧输出（显著影响编码速度） |
+| **QP文件启用** | -use-q-file | [0,1] | 0 | 使用QP文件覆盖帧级QP分配 |
+| **QP文件路径** | -qp-file | 任意字符串 | null | QP文件路径 |
+| **分段优化文件** | -segment-ov-file | 任意字符串 | null | 分段优化配置文件路径 |
+| **编码模式** | -encMode | [0-11] | 7 | 质量与密度权衡预设（0最高质量，11最高密度） |
+| **编码位深** | -bit-depth | [8,10] | 8 | 输入视频位深 |
+| **色彩格式** | -color-format | [1,2,3] | 1 | 输入视频色度采样(1:420,2:422,3:444) |
+| **10bit压缩格式** | -compressed-ten-bit-format | [0,1] | 0 | 10bit数据压缩格式(0:关闭,1:开启) |
+| **源宽度** | -w | [64-8192] | 0 | 输入视频宽度 |
+| **源高度** | -h | [64-4320] | 0 | 输入视频高度 |
+| **编码帧数** | -n | [0-2^31-1] | 0 | 待编码帧数（0表示全部） |
+| **缓冲输入** | -nb | [-1,1-2^31-1] | -1 | 预加载到内存的帧数 |
+| **档次** | -profile | [1,2] | 2 | 1:Main,2:Main10 |
+| **层级** | -tier | [0,1] | 0 | 0:Main,1:High |
+| **级别** | -level | [1-6.2] | 0 | 自动检测设为0 |
+| **帧率** | -fps | [0-2^64-1] | 60 | 帧率设置（大于1000时为Q16格式） |
+| **帧率分子** | -fps-num | [0-2^64-1] | 0 | 帧率分子 |
+| **帧率分母** | -fps-denom | [0-2^64-1] | 0 | 帧率分母 |
+| **注入器** | -inj | [0,1] | 0 | 启用帧注入(0:关闭,1:开启) |
+| **注入帧率** | -inj-frm-rt | [1-240] | 60 | 注入器帧率 |
+| **速度控制** | -speed-ctrl | [0,1] | 0 | 实时编码速度控制 |
+| **隔行视频** | -interlaced-video | [0,1] | 0 | 1:信号隔行扫描 |
+| **分离场** | -separate-fields | [0,1] | 0 | 1:分离场序处理 |
+| **层级结构** | -hierarchical-levels | [0-3] | 3 | GOP层级结构 |
+| **基础层切换** | -base-layer-switch-mode | [0,1] | 0 | 基础层帧类型控制 |
+| **预测结构** | -pred-struct | [0-2] | 2 | 0:低延迟P,1:低延迟B,2:随机访问 |
+| **I帧间隔** | -intra-period | [-2-255] | -2 | I帧间隔（-2:自动） |
+| **刷新类型** | -irefresh-type | [-1,N] | -1 | -1:CRA(开放GOP),≥0:IDR(闭合GOP) |
+| **QP值** | -q | [0-51] | 32 | CQP模式下的初始QP值 |
+| **去块滤波** | -dlf | [0,1] | 0 | 1:禁用去块滤波 |
+| **SAO滤波** | -sao | [0,1] | 1 | 0:禁用采样自适应偏移 |
+| **默认ME/HME** | -use-default-me-hme | [0,1] | 1 | 使用默认运动估计参数 |
+| **HME启用** | -hme | [0,1] | 1 | 层级运动估计开关 |
+| **搜索区域宽** | -search-w | [1-256] | 分辨率相关 | 运动矢量搜索宽度 |
+| **搜索区域高** | -search-h | [1-256] | 分辨率相关 | 运动矢量搜索高度 |
+| **约束帧内** | -constrd-intra | [0,1] | 0 | 约束帧内预测开关 |
+| **码控模式** | -rc | [0,1] | 0 | 0:CQP,1:VBR |
+| **目标码率** | -tbr | 任意数值 | 7000000 | VBR目标码率(bps) |
+| **VBV峰值** | -vbv-maxrate | 任意数值 | 0 | VBV最大码率(bps) |
+| **VBV缓冲区** | -vbv-bufsize | 任意数值 | 0 | VBV缓冲大小(bits) |
+| **VBV初始填充** | -vbv-init | [0-100] | 90 | VBV缓冲初始填充百分比 |
+| **HRD标志** | -hrd | [0,1] | 0 | 假设参考解码器标志 |
+| **最大QP** | -max-qp | [0-51] | 48 | 码控最大QP值 |
+| **最小QP** | -min-qp | [0-50] | 10 | 码控最小QP值 |
+| **前瞻距离** | -lad | [0-250] | 码控相关 | 码控前瞻帧数 |
+| **场景切换检测** | -scd | [0,1] | 1 | 场景切换检测开关 |
+| **码率优化** | -brr | [0,1] | 0 | 视觉质量优化降码率 |
+| **锐度增强** | -sharp | [0,1] | 0 | 背景锐度增强(仅4K/8K) |
+| **VUI信息** | -vid-info | [0,1] | 0 | VUI结构写入开关 |
+| **HDR输入** | -hdr | [0,1] | 0 | HDR10信号写入开关 |
+| **访问单元分隔** | -ua-delm | [0,1] | 0 | 访问单元分隔SEI |
+| **缓冲周期** | -pbuff | [0,1] | 0 | 缓冲周期SEI |
+| **图像定时** | -tpic | [0,1] | 0 | 图像定时SEI |
+| **注册用户数据** | -reg-user-data | [0,1] | 0 | 注册用户数据SEI |
+| **未注册数据** | -unreg-user-data | [0,1] | 0 | 未注册用户数据SEI |
+| **恢复点** | -recovery-point | [0,1] | 0 | 恢复点SEI |
+| **时域ID** | -temporal-id | [0,1] | 1 | NAL单元时域ID写入 |
+| **汇编指令集** | -asm | [0,1] | 1 | 0:仅C,1:自动选择最佳指令集 |
+| **逻辑处理器** | -lp | [0,总数] | 0 | 编码线程运行的逻辑处理器数 |
+| **起始处理器** | -flp | [0,末索引] | 0 | 编码线程起��逻辑处理器索引 |
+| **目标插槽** | -ss | [-1,1] | -1 | 双插槽系统指定运行位置 |
+| **线程数** | -thread-count | [0,N] | 0 | 编码线程数(0:自动) |
+| **实时优先级** | -rt | [0,1] | 1 | 线程实时优先级(仅Linux) |
+| **VPS帧率** | -fpsinvps | [0,1] | 1 | VPS定时信息写入开关 |
+| **Tile行数** | -tile_row_cnt | [1,22] | 1 | Tile行划分数量 |
+| **Tile列数** | -tile_col_cnt | [1,20] | 1 | Tile列划分数量 |
+| **Tile切片模式** | -tile_slice_mode | [0,1] | 0 | 每Tile每Slice模式 |
+| **无限制运动矢量** | -umv | [0,1] | 1 | 运动矢量边界限制开关 |
+| **最大内容亮度** | -max-cll | [0,65535] | 0 | HDR最大内容亮度值 |
+| **最大帧平均亮度** | -max-fall | [0,65535] | 0 | HDR最大帧平均亮度值 |
+| **主显示启用** | -use-master-display | [0,1] | 0 | 主显示色彩体积SEI开关 |
+| **主显示参数** | -master-display | 特定格式 | 0 | 主显示色彩体积参数 |
+| **杜比视界RPU** | -dolby-vision-rpu | 任意字符串 | null | 杜比视界RPU元数据文件路径 |
+| **杜比视界配置** | -dolby-vision-profile | 8.1或81 | 0 | 杜比视界Profile 8.1配置 |
+| **NALU文件** | -nalu-file | 任意字符串 | null | CEA 608/708元数据文件路径 |

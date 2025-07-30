@@ -1,0 +1,27 @@
+---
+title: UT Video
+sidebar_position: 13
+---
+
+# UT Video 编解码器套件
+
+:::danger 需要协助
+本节内容亟待完善。如果您能提供帮助，请查阅我们的[贡献指南](/docs/contribution-guide)开始参与贡献！
+:::
+
+UT Video编解码器套件是由梅澤威志（Umezawa Takeshi）开发的一款高速无损视频编解码器，采用自由GNU通用公共许可证发布。该编解码器的算法基于霍夫曼编码。
+
+UT Video作为HuffYUV的替代方案被开发，旨在实现更好的压缩效率。它支持多种色彩空间处理，包括YUV422(ULY2)、RGB(ULRG)、RGBA(ULRA)以及最新加入的YUV420(ULY0)。
+
+该编解码器提供x86和x64两种版本构建。得益于其多线程支持特性，即使处理高清电视素材也能实现实时编码。由于大量使用SSE2指令集进行速度优化，该编解码器需要处理器支持SSE2指令集。
+
+通过[FFmpeg](/docs/utilities/ffmpeg)可使用多种预测模式：
+- 不采用预测（默认）
+- 左邻预测（整片连续应用）
+- 梯度预测
+- 中值预测
+
+使用FFmpeg编码utvideo的示例如下：
+`ffmpeg -i [输入文件] -c:v utvideo -pred [0,1,2,3] [输出文件]`
+
+*参考资料：[维基百科](https://en.wikipedia.org/wiki/Ut_Video_Codec_Suite)*

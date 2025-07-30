@@ -1,0 +1,114 @@
+---
+title: rav1e
+keywords: [AV1, 编码, 视频编码]
+sidebar_position: 5
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# rav1e
+
+[rav1e](https://github.com/xiph/rav1e) 是一款使用汇编语言和Rust编写的开源AV1编码命令行工具，由Xiph.org和Mozilla联合开发，采用BSD-2 Clause许可证。
+
+## FFmpeg集成
+
+rav1e通过`librav1e`编解码器集成在FFmpeg中，可通过运行`ffmpeg -h encoder=librav1e`检查是否可用。非FFmpeg标准的rav1e参数可通过`-rav1e-params`传递。
+
+## 支持的色彩空间
+
+rav1e支持以下色彩空间格式：
+
+| 格式           | 色度抽样 | 支持位深 |
+|------------------|:------------------:|-----------------------|
+| YUV420P          | 4:2:0              | 8位                 |
+| YUVJ420P         | 4:2:0              | 8位 (全范围)    |
+| YUV422P          | 4:2:2              | 8位                 |
+| YUVJ422P         | 4:2:2              | 8位 (全范围)    |
+| YUV444P          | 4:4:4              | 8位                 |
+| YUVJ444P         | 4:4:4              | 8位 (全范围)    |
+| YUV420P10LE      | 4:2:0              | 10位                |
+| YUV422P10LE      | 4:2:2              | 10位                |
+| YUV444P10LE      | 4:4:4              | 10位                |
+| YUV420P12LE      | 4:2:0              | 12位                |
+| YUV422P12LE      | 4:2:2              | 12位                |
+| YUV444P12LE      | 4:4:4              | 12位                |
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+
+        官方预编译的rav1e二进制文件可在Github仓库的[发布页面](https://github.com/xiph/rav1e/releases)获取。第三方工具[rAV1ator CLI](../utilities/rav1ator-cli.mdx)可自动下载并安装rav1e到`/usr/local/bin`目录。也可通过Cargo运行`cargo install rav1e`安装。
+
+        :::info 稳定版说明
+为保证稳定性及版本号准确性，请将源码重置到对应发布提交。在发布页面点击标签右侧图标，复制URL中的提交哈希。然后在克隆的rav1e目录中执行`git reset --hard [提交哈希]`
+:::
+
+        以下是以2024年2月19日最新发布的0.7.1版本为例的构建指南。若无特殊需求需要使用最新git版本而非官方发布版本，可省略`git reset`命令。
+
+        ```bash
+        git clone https://github.com/xiph/rav1e.git
+        cd rav1e
+        git reset --hard a8d05d0c43826a465b60dbadd0ab7f1327d75371
+        RUSTFLAGS="-C target-cpu=native" cargo build --release
+        ```
+
+        构建完成后，二进制文件位于`/target/release`目录，可通过`cp /target/release/rav1e /usr/local/bin`等命令复制到目标位置。
+
+        ### 支持HDR10+的补丁安装
+
+        rav1e当前有一个由[hdr10plus_tool](../utilities/hdr10plus_tool.mdx)和[dovi_tool](../utilities/dovi_tool.mdx)开发者quietvoid提交的[未合并PR](https://github.com/xiph/rav1e/pull/3000)，该补丁新增了`--hdr10plus-json`参数用于输入HDR10+动态元数据。本地合并步骤如下：
+
+        ```bash
+        git clone https://github.com/xiph/rav1e.git
+        cd rav1e
+        git reset --hard [发布提交]
+        git fetch origin pull/3000/head:HDR10+
+        ```
+        应用补丁后即可正常构建。
+
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        如不想从源码构建，可在Github仓库的[发布页面](https://github.com/xiph/rav1e/releases)获取官方预编译版本。
+
+         :::info 稳定版说明
+为保证稳定性及版本号准确性，请将源码重置到对应发布提交。在发布页面点击标签右侧图标，复制URL中的提交哈希。然后在克隆的rav1e目录中执行`git reset --hard [提交哈希]`
+:::
+
+        以下Windows平台构建指南同样以0.7.1版本为例：
+
+        ```powershell
+        git clone https://github.com/xiph/rav1e.git
+        cd rav1e
+        git reset --hard a8d05d0c43826a465b60dbadd0ab7f1327d75371
+        set RUSTFLAGS=-C target-cpu=native
+        cargo build --release
+        ```
+        构建产物位于`target/release`目录
+    </TabItem>
+</Tabs>
+
+## 使用指南
+
+rav1e的AV1编码参数默认值非常合理，通常只需最小化调整参数即可获得良好效果。
+
+:::小贴士
+将aomenc的`cq-level`和SVT-AV1的`crf`值转换为rav1e量化参数时需乘以4，例如`--cq-level 20`对应`--quantizer 80`。
+:::
+
+```bash title="基础用法"
+rav1e -i input.y4m -o output.ivf --quantizer 60 --photon-noise 8
+```
+
+```bash title="FFmpeg管道输入10位色深"
+ffmpeg -i input.mkv -pix_fmt yuv420p10le -strict -2 -f yuv4mpegpipe - | rav1e - -o output.ivf --quantizer 80 --photon-noise 8
+```
+
+```bash title="4K视频FFmpeg管道输入10位色深"
+ffmpeg -i input.mkv -pix_fmt yuv420p10le -strict -2 -f yuv4mpegpipe - | rav1e - -o output.ivf --quantizer 68 --tile-columns 2 --tile-rows 1 --photon-noise 8
+```
+
+## 优化技巧
+
+1. 针对4K(2160p)编码建议使用2x1分块布局(即`tile-columns 2`和`tile-rows 1`)，可显著提升编解码效率

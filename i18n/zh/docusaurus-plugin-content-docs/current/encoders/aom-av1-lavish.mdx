@@ -1,0 +1,161 @@
+---
+title: aom-av1-lavish
+sidebar_position: 18
+keywords: [AV1, 视频编码, 视频压缩, AOM AV1]
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# aom-av1-lavish
+
+:::info 社区分支版本
+本文介绍的是aomenc的分支版本aom-psy101。如需了解主线的aomenc编码器，请先阅读我们的[aomenc百科条目](./aomenc.mdx)。
+:::
+
+主线aomenc存在一些不足：默认参数不佳、过度依赖感知缺陷的[PSNR](../metrics/PSNR.mdx)指标、参数设置存在误导性等问题。幸运的是，编码社区开发了多个分支版本来解决这些根本问题。
+
+:::warning 已停止维护
+截至2024年6月4日，aom-av1-lavish已停止维护。本文内容不受影响，但用户应考虑项目不再维护的实际情况。
+:::
+
+- [aom-av1-psy](https://github.com/BlueSwordM/aom-av1-psy) *2023年1月13日起停止维护*
+- [aom-av1-lavish](https://github.com/Clybius/aom-av1-lavish) *2024年6月4日起停止维护*
+- [aom-psy101](./aom-psy101.mdx)
+- [aom-av1ador](https://github.com/porcino/aom-av1ador)
+
+这些分支版本修正了AOM原开发团队的决策失误，并引入了新参数和调校选项以提供更精细的编码控制。
+
+[aom-av1-lavish](https://github.com/Clybius/aom-av1-lavish)是由[Clybius](https://github.com/Clybius)开发的aomenc分支版本，旨在提升AV1编码质量和速度。Clybius是AV1社区的知名开发者，同时也是[SVT-AV1-PSY](./SVT-AV1-PSY.mdx)项目的贡献者。
+
+## FFmpeg集成
+
+aomenc可通过``libaom-av1``编解码器在FFmpeg中使用，运行``ffmpeg -h encoder=libaom-av1``检查是否可用。非FFmpeg标准的aomenc参数需通过``-aom-params``传递。
+
+:::caution 主线版本限制
+除非自行编译集成aom-av1-lavish的FFmpeg，否则使用的仍是主线aomenc。要使用lavish版本，必须从源码编译并链接对应的库文件。
+:::
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="linux" label="Linux" default>
+        *x86_64架构Linux用户可通过[rAV1ator CLI](../utilities/rav1ator-cli.mdx)获取预编译的AVX2优化版本。但推荐从源码编译以获得最佳性能。*
+
+        编译需要CMake、Perl、GNU Make和nasm（x86架构需使用yasm）。
+
+        ```bash title="克隆aom-av1-lavish仓库的Endless_Merging分支并创建构建目录"
+        git clone https://github.com/Clybius/aom-av1-lavish -b Endless_Merging
+        cd aom-av1-lavish && mkdir -p aom_build && cd aom_build
+        ```
+
+        ```bash title="CMake配置"
+        cmake .. -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DCONFIG_TUNE_BUTTERAUGLI=0 -DCONFIG_TUNE_VMAF=0 -DCONFIG_AV1_DECODER=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS="-flto -O3 -march=native -pipe -fno-plt" -DCMAKE_LD_FLAGS="-flto -O3 -march=native"
+        ```
+        此配置将静态编译aomenc，禁用文档生成、额外调校模式、测试模块和解码器，并启用针对当前CPU架构的优化。
+
+        ```bash title="开始编译"
+        make -j$(nproc)
+        ```
+        编译完成后，可执行文件位于当前目录（`aom_build`）。
+
+        可选安装到系统路径（可能需要管理员权限）：
+        ```bash
+        make install
+        ```
+    </TabItem>
+    <TabItem value="mac" label="macOS">
+        macOS的安装流程与Linux类似，但需注意：
+        - 可能需要手动创建`/usr/local/bin`目录
+        - Homebrew安装的库文件位于`/opt/homebrew/lib`
+
+        **Homebrew安装**
+        ```bash
+        brew update && brew upgrade
+        brew install aom
+        ```
+
+        **源码编译**
+        需先应用临时补丁：
+        - 在`av1/encoder/encodeframe_utils.c`第19行添加`#include "aq_variance.h"`
+        - 注释掉`av1/encoder/speed_features.c`第2546行的`const int qindex_thresh_cdef_sf_s1_s3_l2[2] = { 92, 48 };`
+
+        后续步骤与Linux相同：
+        ```bash
+        mkdir -p aom_build && cd aom_build
+        cmake .. -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DCONFIG_TUNE_BUTTERAUGLI=0 -DCONFIG_TUNE_VMAF=0 -DCONFIG_AV1_DECODER=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS="-flto -O3 -march=native -pipe -fno-plt" -DCMAKE_LD_FLAGS="-flto -O3 -march=native"
+        make -j$(nproc)
+        make install
+        ```
+        验证安装：
+        ```bash
+        aomenc --help | grep AOMedia -C 3
+        ```
+        正确输出应包含"Psy"标识。
+    </TabItem>
+    <TabItem value="wind" label="Windows">
+        预编译版本下载（2023年9月6日更新）：
+        https://autumn.revolt.chat/attachments/download/-2EiZW1edcT9anApFZ1PJBEber-pJ6z02NiQBjbr28
+
+        加入[AV1 Discord服务器](https://discord.gg/vpREHAvYvh)的#community-builds频道获取最新版本。
+
+        **编译安装**
+        1. 安装MSYS2和MinGW-W64
+        ```bash
+        pacman -S cmake git perl yasm nasm python3 doxygen mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake base-devel
+        ```
+        2. 克隆仓库并编译
+        ```bash
+        git clone https://github.com/Clybius/aom-av1-lavish -b Endless_Merging
+        cd aom-av1-lavish && mkdir -p aom_build && cd aom_build
+        cmake .. -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DCONFIG_TUNE_BUTTERAUGLI=0 -DCONFIG_TUNE_VMAF=0 -DCONFIG_AV1_DECODER=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS="-flto -O3 -march=native -pipe -fno-plt" -DCMAKE_LD_FLAGS="-flto -O3 -march=native"
+        make -j$(nproc)
+        ```
+        注意：为特定CPU优化的二进制文件不适用于其他架构。
+    </TabItem>
+</Tabs>
+
+## 使用指南
+
+### AV1视频编码
+
+:::info
+aomenc的设计要求使用2-pass编码以充分发挥其效率优势，包括更优的码率控制和编码特性。
+:::
+
+```bash title="简单Y4M输入示例（CQ 22，单次编码）"
+aomenc --end-usage=q --cq-level=32 --bit-depth=10 --passes=1 --ivf -o output.ivf input.y4m
+```
+
+```bash title="FFmpeg管道输入（2-pass编码第一遍）"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | aomenc - --end-usage=q --cq-level=32 --bit-depth=10 --passes=2 --pass=1 --fpf-log=aom-pass.log  --ivf -o output.ivf
+```
+
+### AVIF图像编码
+
+通过avifenc使用aomenc是目前最佳的AVIF编码方案：
+`avifenc -c aom -s 4 -j 8 -d 10 -y 444 --min 1 --max 63 -a end-usage=q -a cq-level=16 -a tune=ssim [input] output.avif`
+
+参数说明：
+- `-c aom` 指定编码器
+- `-s 4` 速度等级（4以下质量最佳）
+- `-j 8` 线程数（超过12可能降低效率）
+- `-d 10` 位深（推荐10bit）
+- `-y 444` 色度采样（4:4:4通常更优）
+- `cq-level=16` 质量参数（值越低质量越高）
+- `tune=ssim` RDO优化模式
+
+## 推荐参数
+
+由于aomenc原生多线程支持有限，推荐配合[Av1an](/docs/utilities/av1an)使用：
+`--bit-depth=10 --cpu-used=4 --end-usage=q --cq-level=24 --threads=2 --tile-columns=0 --tile-rows=0 --lag-in-frames=64 --tune-content=psy --tune=ssim --enable-keyframe-filtering=1 --disable-kf --kf-max-dist=9999 --enable-qm=1 --deltaq-mode=0 --aq-mode=0 --quant-b-adapt=1 --enable-fwd-kf=0 --arnr-strength=1 --sb-size=dynamic --enable-dnl-denoising=0 --denoise-noise-level=8`
+
+关键参数解析：
+- `--cpu-used=4` 预设等级（0-9，4为最佳平衡点）
+- `--tile-columns/rows` 分块编码设置（1080p以下不建议启用）
+- `--arnr-strength=1` 滤波强度（动画内容推荐1，实拍内容推荐4）
+- `--denoise-noise-level=8` 颗粒合成强度（>12会产生明显噪点图案）
+
+## 技巧提示
+1. 使用`--butteraugli-resize-factor=2`加速butteraugli调校模式
+2. `--arnr-maxframes`控制参考帧滤波范围（高值适合低码率场景）

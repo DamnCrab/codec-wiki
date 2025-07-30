@@ -1,0 +1,91 @@
+---
+title: uavs3e
+sidebar_position: 20
+keywords: [avs3, 编码, 视频编码]
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# uavs3e
+
+[uavs3e](https://github.com/uavs3/uavs3e/) 是一款开源的 [AVS3](/docs/video/AVS3) 编解码器编码器，由北京大学深圳研究生院、鹏城实验室和广东博华超高清创新中心等中国科研机构联合开发。
+
+该编码器更新频率较低，可能存在错误和编译问题。支持 AMD64（带AVX2指令集）、ARM（带NEON指令集）和龙芯架构处理器。
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        开发者未提供预编译二进制文件，需自行编译。编译需要 GNU Make 和 CMake。截至2024年8月，`uavs3e` 无法通过 GCC 14 编译，使用 Clang 18 可解决此问题。
+
+        ```bash
+        git clone https://github.com/uavs3/uavs3e.git
+        cd uavs3e
+        mkdir build/linux && cd build/linux
+        cmake ../.. -DCOMPILE_10BIT=0 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        make -j 8
+        ```
+
+        若遇到 `close` 或 `lseek64` 函数未定义的错误，请在 `test/utest.c` 文件开头添加以下两行：
+
+        ```c
+        #define _LARGEFILE64_SOURCE
+        #include <unistd.h>
+        ```
+
+        编译生成的二进制文件位于 `build/linux` 目录。Linux系统可通过 `make install` 命令安装编码器（可能需要管理员权限）。
+
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        1. 开始编译前请确保已安装以下必备组件：
+        - [Microsoft C++ 生成工具](https://visualstudio.microsoft.com/visual-cpp-build-tools/)：选择"使用C++的桌面开发"
+        - [Git](https://git-scm.com/download/win)
+
+        2. 打开 VS 2022 的开发人员 PowerShell
+
+        3. 执行以下命令：
+
+        ```bash
+        git clone https://github.com/uavs3/uavs3e.git
+        cd uavs3e
+        .\version.bat
+        cd build\x86_windows
+        devenv uavs3e.sln /Upgrade
+        msbuild uavs3e.sln /p:Configuration=Release /p:WindowsTargetPlatformVersion=10.0
+        ```
+
+        生成的二进制文件位于 `bin` 文件夹。
+
+    </TabItem>
+</Tabs>
+
+### 10-bit支持
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        启用10-bit支持需在CMake命令中设置 `-DCOMPILE_10BIT=1`。但部分系统报告使用此标志编译的编码器会导致[段错误](https://github.com/uavs3/uavs3e/issues/53)。
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        启用10-bit支持需将 `inc/com_api.h` 文件中的 `#define COMPILE_10BIT 0` 改为 `#define COMPILE_10BIT 1`。
+    </TabItem>
+</Tabs>
+
+## 使用说明
+
+该编码器无法解析 `.y4m` 文件，需先转换为原始视频格式（`.yuv`）。
+
+```bash title="8-bit全高清23.976帧率输入，QP值20，输出原始avs3码流"
+uavs3enc -i input.yuv -w 1920 -h 1080 -d 8 --fps_num 24000 --fps_den 1001 -q 20 -o output.avs3
+```
+
+```bash title="速度预设2，CRF值20，帧内周期120，多线程编码"
+uavs3enc -i input.yuv -w 1920 -h 1080 -d 8 --fps_num 24000 --fps_den 1001 -p 120 --wpp_threads 8 --frm_threads 8 --speed_level 2 --rc_type 1 -q 20 -o output.avs3
+```
+
+当前版本[uavs3e不支持管道传输](https://github.com/uavs3/uavs3e/issues/2)。
+
+## 注意事项
+
+1. 可用速度预设范围为0-4，其中0最慢，4最快。
+2. 该编码器在视觉质量方面具有较强竞争力，甚至可与最新的 [AV1](../video/AV1.mdx) 和 [VVC](../video/VVC.mdx) 编码器媲美。
+3. 可使用 `uavs3d` 解码输出码流。如���实时播放，需使用带 `--enable-libuavs3d` 参数编译的 [FFmpeg](/docs/utilities/ffmpeg)。

@@ -1,0 +1,28 @@
+---
+title: FFMetrics
+sidebar_position: 8
+---
+
+# FFMetrics 视频质量分析工具
+
+<picture>
+    <source srcset="/img/ffmetrics.avif" type="image/avif" />
+    <img src="/img/ffmetrics.webp" alt="FFmetrics 操作界面" />
+</picture>
+<br/><br/>
+
+FFMetrics 是一款基于 FFmpeg 的专有图形用户界面工具（仅限 Windows 平台），可通过图表计算和可视化视频质量评估指标。目前支持 PSNR、SSIM 和 VMAF 三种评估标准。
+
+## 安装说明
+
+:::caution
+使用前请确保系统环境变量中已配置 FFmpeg 路径。如需计算 VMAF 指标，编译时需启用 `--enable-libvmaf` 参数。
+:::
+
+从其 GitHub 主页[发布页面](https://github.com/fifonik/FFMetrics/releases)下载程序，选择所需版本解压至目标文件夹后，直接运行 exe 文件即可启动。
+
+## 使用指南
+
+点击"浏览"按钮导入参考视频（源文件），通过"添加文件"载入待分析的失真视频（编码后文件）。勾选需要计算的评估指标复选框，如需使用自定义 VMAF 模型可通过"VMAF 选项"进行配置，最后点击"开始"按钮即可实时生成各项指标的评估图表。
+
+处理时间取决于您的 CPU 性能，可能需要较长时间完成运算。

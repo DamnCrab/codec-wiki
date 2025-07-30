@@ -1,0 +1,138 @@
+---
+title: Av1an
+sidebar_position: 2
+templating: true
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Av1an
+
+<picture>
+    <source srcset="https://raw.githubusercontent.com/av1-community-contributors/codec-wiki/main/static/img/av1an_96_workers.avif" type="image/avif" />
+    <img src="https://autumn.revolt.chat/attachments/K3OhOCAy9bkUCkImek_q3-t6q3zctbn9SbWW-_RI19/av1an_96_workers.webp" alt="Av1an并行96工作线程" />
+</picture>
+
+<br/><br/>
+Av1an是一个视频编码框架。它通过并行运行多个编码器进程来提高编码速度和CPU利用率，支持目标质量调控、VMAF画质评估等高级视频编码功能。
+
+需要注意的是，每增加一个"工作线程"都会显著提升内存占用，因此内存较小（<8GB）的用户可能无法充分发挥其优势。
+:::caution
+Av1an除Docker镜像外不附带任何依赖项，需用户自行安装所需组件。
+:::
+
+## 系统要求
+
+无论使用何种操作系统，都需要预先安装Python、[FFmpeg](/docs/utilities/ffmpeg)和[Vapoursynth](/docs/filtering/vapoursynth)。
+
+## 安装指南
+
+### Windows系统
+
+#### 脚本安装
+Windows用户可使用这个[一键安装脚本](https://github.com/Hishiro64/av1an-win-script)，该脚本会将所有依赖项安装到便携文件夹中。请注意安装后需手动更新依赖项。
+
+#### 预编译版本
+GitHub发布页的"[latest](https://github.com/master-of-zen/Av1an/releases/tag/latest)"标签下提供预编译二进制文件，下载后可直接使用。
+
+#### 源码编译
+推荐使用MSYS2中的mingw-w64工具链进行编译。安装MSYS2后，在MinGW64终端执行：
+```bash
+pacman -Syuu; pacman -S cmake git nasm python3 mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake base-devel mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-rust mingw-w64-x86_64-lld mingw-w64-x86_64-clang mingw-w64-x86_64-make
+```
+
+接着从Vapoursynth的GitHub[发布页](https://github.com/vapoursynth/vapoursynth/releases)下载便携版(`VapourSynth64-Portable-RXX.7z`)，确保版本与MinGW64的Python版本兼容。解压后将`sdk\lib64`目录下的所有库文件复制到MinGW64的`lib`目录（通常位于`C:\msys64\mingw64\lib`）。
+
+最后执行编译：
+```bash
+git clone https://github.com/master-of-zen/Av1an
+cd Av1an
+RUSTFLAGS="-C target-cpu=native" cargo build --release
+```
+编译生成的二进制文件位于`C:\msys64\home\用户名的\Av1an\target\release`目录。
+
+### macOS系统
+
+#### MacPorts安装
+```bash
+port install av1an
+```
+
+#### 源码编译
+需先通过Homebrew安装Git、Nasm和Rust：
+```bash
+git clone https://github.com/master-of-zen/Av1an
+cd Av1an
+RUSTFLAGS="-C target-cpu=native" cargo build --release
+```
+编译产物位于`Av1an/target/release`，可复制到`/usr/local/bin`等系统路径。
+
+### Linux系统
+
+#### 包管理器安装
+部分发行版（如Arch Linux）的软件仓库已包含Av1an。
+
+#### 源码编译
+通过包管理器或Rustup安装Git、Nasm和Rust后：
+```bash
+git clone https://github.com/master-of-zen/Av1an.git
+cd Av1an
+RUSTFLAGS="-C target-cpu=native" cargo build --release
+```
+二进制文件生成于`Av1an/target/release`，可部署到`/usr/local/bin`等路径。
+
+### Docker部署
+以下示例假设待编码文件位于当前工作目录。
+
+<Tabs>
+  <TabItem value="windows" label="Windows" default>
+
+   ```bash
+   docker run --privileged -v "$(pwd):/videos" --user $(id -u):$(id -g) -it --rm masterofzen/av1an:latest -i S01E01.mkv {options}
+   ```
+  </TabItem>
+  <TabItem value="linux" label="Linux">
+
+   ```bash
+   docker run --privileged -v "${PWD}:/videos" -it --rm masterofzen/av1an:latest -i S01E01.mkv {options}
+   ```
+  </TabItem>
+  <TabItem value="build" label="手动构建">
+
+   ```bash
+   docker build -t "av1an" .
+   ```
+   在仓库根目录执行此命令，依赖项将自动安装至镜像。
+  </TabItem>
+</Tabs>
+
+:::info
+如需指定其他目录，替换命令中的$(pwd)即可：
+
+```bash
+docker run --privileged -v "/c/Users/masterofzen/Videos":/videos --user $(id -u):$(id -g) -it --rm masterofzen/av1an:latest -i S01E01.mkv {options}
+```
+
+Linux系统需使用`--user`参数避免权限问题，确保目标目录有写入权限。
+:::
+
+:::caution
+Docker镜像仅包含默认依赖项。
+::: 
+
+## 依赖项安装
+
+必须安装分块处理方法，内置方法效率较低。
+
+## 故障排除
+
+### Linux系统使用mkvmerge时出现"Error: The file 'XXXXX.ivf' could not be opened for reading: open file error"
+由于mkvmerge会同时打开所有编码分块，当视频较长时会超出Linux默认1024的文件描述符限制。可通过`ulimit -n 20000`临时提升当前会话的文件打开上限。
+
+### 输出视频出现单帧灰屏闪烁
+这是Av1an特有的问题，因其采用随机分段读取机制，传统基于关键帧的解码方法（如L-SMASH和FFMS2）可能导致解码失败。目前有三种解决方案：
+
+1. 使用x264创建无损中间文件（`-qp 0`），虽能彻底解决问题但会生成超大文件
+2. 采用线性解码分块方法如`bestsource`，但会导致编码速度下降10-15倍
+3. 使用`dgdecnv`分块方法，这是NVIDIA显卡专用的CUVID加速解码方案，完美支持随机读取，但仅支持x86_64平台且需要DGIndexNV商业软件配合

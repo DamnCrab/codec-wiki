@@ -1,0 +1,43 @@
+---
+title: dav1d
+sidebar_position: 15
+---
+# dav1d（AV1解码器）
+
+dav1d（意为"dav1d是AV1解码器"）是一款高性能、轻量级且开源的AV1视频编解码器软件解码器。该项目主要由[Two Orioles公司](https://www.twoorioles.com)受Videolan委托开发，以极高的轻量化程度和解码速度著称。
+
+## 特性
+
+- **架构设计**：采用C99语言编写并配合汇编优化（NASM/GAS语法），专为高速解码和低资源消耗设计
+- **跨平台支持**：兼容x86、x64、ARMv7、ARMv8等多种架构，支持Windows、Linux、macOS、Android和iOS系统
+- **行业应用**：已被所有Android设备采用，并集成于Chrome、Safari、Edge和Firefox等主流浏览器。据信苹果设备上的AVIF解码功能可能使用了dav1d的内部定制版本
+
+## 二进制体积
+
+dav1d的二进制文件大小约为libaom解码器的三分之一，仅0.9MB左右。其代码库规模也远小于libaom（约十分之一的代码量），这种轻量化特性使其更易于集成到各类应用中。
+
+## 性能对比
+
+### libgav1
+
+- 解码速度显著优于Google的libgav1解码器。例如：
+  - 在Google Pixel 3 XL（无硬件加速）上，dav1d可实现4K60视频50fps的解码速度，而libgav1不足10fps
+  - 在CPU资源占用和功耗控制方面表现更优，特别适合低端设备
+
+### libaom
+
+- 解码性能优于AV1参考实现libaom，特别是在汇编优化加持后。libaom因侧重编解码功能演示而非性能优化导致速度较慢，而dav1d专为实际应用场景优化
+- 内存占用仅为libaom的四分之一左右
+
+### ffhevc
+
+dav1d的解码效率与ffhevc相当甚至更优。
+
+## 近期进展
+
+截至2024年4月：
+- Android已通过Play系统更新将dav1d设为默认AV1软件解码器，显著改善了无硬件AV1解码器设备的视频播放体验
+- dav1d可在多数设备上流畅解码720p30视频，在性能更强的硬件上支持更高分辨率
+
+## 结论
+dav1d是目前最高效且应用最广的软件AV1解码器。其小巧的体积、跨平台的高性能表现以及低资源消耗，使其成为优于libgav1和libaom等替代方案的首选。此外，被Android等主流平台采用的事实，也印证了其在实际应用中的卓越表现。

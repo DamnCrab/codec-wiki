@@ -1,0 +1,92 @@
+---
+title: aom-psy101
+sidebar_position: 19
+keywords: [AV1, 编码, 视频编码, AOM AV1]
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# aom-psy101
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+:::info 社区分支
+本文介绍的是aomenc的一个分支版本aom-psy101。如需了解主线的aomenc编码器，请先阅读我们的[aomenc百科条目](./aomenc.mdx)。
+:::
+
+主线的aomenc并不完美。它存在默认参数不合理、过度依赖有感知缺陷的[PSNR](../metrics/PSNR.mdx)指标、参数设置误导性等问题。幸运的是，编码社区开发了几个分支版本来解决这些问题。
+
+- [aom-av1-psy](https://github.com/BlueSwordM/aom-av1-psy) *2023年1月13日起停止维护*
+- [aom-av1-lavish](./aom-av1-lavish.mdx) *2024年6月4日起停止维护*
+- [aom-psy101](https://gitlab.com/damian101/aom-psy101)
+- [aom-av1ador](https://github.com/porcino/aom-av1ador)
+
+这些分支修复了AOM原开发团队的一些不当决策，最重要的是引入了新参数和调优选项来增强编码器的微调能力。
+
+[aom-psy101](https://gitlab.com/damian101/aom-psy101)是一个旨在提升AV1编码质量和速度的aomenc分支，由优秀的AV1社区开发者[damian101](https://gitlab.com/damian101)开发。
+
+## FFmpeg集成
+
+aomenc可通过``libaom-av1``集成到FFmpeg中，运行``ffmpeg -h encoder=libaom-av1``检查是否可用。非FFmpeg标准的aomenc参数可通过``-aom-params``传递。
+
+:::caution 主线aomenc
+除非您自行编译集成了aom-psy101的FFmpeg，否则使用的都是主线aomenc。只有通过源码编译并链接aom-psy101提供的库文件，才能在FFmpeg中使用该分支版本。
+:::
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS" default>
+        1. 克隆psy101仓库：
+        ```bash title="克隆仓库"
+        git clone https://gitlab.com/damian101/aom-psy101
+        cd aom-psy101 && mkdir aom_build && cd aom_build
+        ```
+
+        2. 配置编译选项（以下参数确保生成性能最优的`aomenc`二进制文件）：
+        ```bash title="CMake配置"
+        cmake .. -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DCONFIG_TUNE_BUTTERAUGLI=0 -DCONFIG_TUNE_VMAF=0 -DCONFIG_AV1_DECODER=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -pipe -march=native" -DCMAKE_C_FLAGS="-flto -pipe -march=native"
+        ```
+
+        3. 开始编译：
+        ```bash title="编译"
+        make -j$(nproc)
+        ```
+
+        4. 安装到系统（可能需要管理员权限）：
+        ```bash title="安装"
+        make install
+        ```
+    </TabItem>
+    <TabItem value="wind" label="Windows">
+        推荐使用**MSYS2**构建，它提供了类Unix的编译环境。
+
+        0. 从[MSYS2官网](https://www.msys2.org/)下载安装MSYS2
+
+        1. 关闭现有MSYS2终端，启动Clang64控制台并安装依赖：
+        ```bash
+        pacman -S git perl mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-ninja mingw-w64-clang-x86_64-cmake mingw-w64-clang-x86_64-nasm
+        ```
+
+        2. 克隆psy101仓库：
+        ```bash title="克隆仓库"
+        git clone https://gitlab.com/damian101/aom-psy101
+        cd aom-psy101 && mkdir aom_build && cd aom_build
+        ```
+
+        3. 配置编译选项：
+        ```bash title="CMake配置"
+        LDFLAGS=-static cmake .. -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DCONFIG_TUNE_BUTTERAUGLI=0 -DCONFIG_TUNE_VMAF=0 -DCONFIG_AV1_DECODER=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -pipe -march=native" -DCMAKE_C_FLAGS="-flto -pipe -march=native"
+        ```
+
+        4. 开始编译：
+        ```bash title="编译"
+        ninja
+        ```
+
+        编译生成的二进制文件位于MSYS2安装目录（通常为`C:`盘）下的`aom-psy101\aom_build`文件夹中。
+    </TabItem>
+</Tabs>

@@ -1,0 +1,111 @@
+---
+title: AVIF
+sidebar_position: 6
+---
+
+# AVIF
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+AVIF（AV1图像文件格式）是一种基于[AV1](../video/AV1.mdx)视频编解码器的新型图像格式。它取代了[HEIC](HEIC.mdx)格式，并采用与HEIC相同的HEIF容器。相比包括[WebP](WebP.mdx)、HEIC和[JPEG](JPEG.mdx)在内的传统图像编解码器，AVIF设计具备更丰富的功能集和更优的有损压缩性能。虽然常与[JPEG-XL](JXL.mdx)相比较，但两者实际优势领域截然不同。
+
+AVIF提供两种编码配置：Baseline（基线）和Advanced（高级），分别基于AV1的Main和High配置。AVIF Baseline配置支持最大8,192*4,352分辨率（符合AV1 Level 5.1及以下要求）。通过分块技术，理论上可将Baseline配置的最大分辨率提升至65536*65536，但这会降低编码效率并可能导致区块边缘出现视觉伪影。Baseline配置最高仅支持10位色深。
+
+AVIF Advanced配置将最大图像尺寸扩展至16,384*8,704，同样支持分块技术但存在相同限制。该配置允许使用AV1 Level 6.0及以下级别，最高支持12位色深。需注意的是，虽然当前AVIF实现普遍支持两种配置，但未来可能变化——这是基于视频的图像编解码器的固有风险，HEIC目前正面临类似问题。
+
+## 性能清单
+
+无损？*效果差*
+
+有损？*支持*
+
+支持位深：
+*8位/10位/12位*
+
+HDR/广色域？*支持*
+
+动画？*支持*
+
+透明通道？*支持*
+
+渐进式解码？*不支持*
+
+免专利费？*是*
+
+**兼容浏览器**（完整支持版本）
+
+- [Google Chrome](https://www.google.com/chrome/) 85+
+
+- [Safari](https://www.apple.com/safari/) 16.4+
+
+- [Firefox](https://www.mozilla.org/en-US/firefox/new/) 113+
+
+- [Opera](https://www.opera.com/) 71+
+
+- [GNOME Web](https://apps.gnome.org/app/org.gnome.Epiphany/)
+
+- [Thorium](https://thorium.rocks/)
+
+- [Mercury](https://thorium.rocks/mercury)
+
+## 格式解析
+
+### 优势
+
+AVIF在非摄影图像和摄影图像领域均展现出卓越的有损压缩性能，视觉质量始终优于JPEG。
+
+通过[libaom](../encoders/aomenc.mdx)的`--tune iq`参数或[SVT-AV1-PSY](../encoders/SVT-AV1-PSY.mdx)的Tune 4模式，AVIF通常能实现网络图像中最优的比特质量比。虽然[JPEG XL](../images/JXL.mdx)功能更丰富，但AVIF在压缩效率上更胜一筹。
+
+自2020年Google Chrome采用以来，AVIF兼容性快速提升。作为相对较新的格式，其在浏览器市场的普及速度惊人——截至2024年已被视为[基础特性](https://web-platform-dx.github.io/web-features/)。
+
+AVIF的丰富功能支持HDR等新图像体验，其动画表现尤为突出。得益于AV1的视频编码技术，它已成为大多数场景下最佳的动态图像格式。
+
+### 局限性
+
+AVIF编码实现复杂，获得有竞争力质量的图像需要更长的编码时间。由于采用帧内块间数据共享技术，其并行编码能力受限且会加重生成损失（理论上可提升编码效率）。通过aomenc页面的AVIF编码章节可了解详情：
+
+<details>
+  <summary>通过avifenc使用aomenc编码AVIF</summary>
+  <div>
+    <p>由于SVT-AV1仅支持4:2:0色度抽样，rav1e编码静止图像速度不足，而libaom团队在帧内编码上投入更多精力，因此通过avifenc调用aomenc被公认为最佳AVIF编码方案。</p>
+    <p>典型编码命令示例：</p>
+    <pre><code>avifenc -c aom -s 4 -j 8 -d 10 -y 444 --min 1 --max 63 -a end-usage=q -a cq-level=16 -a tune=ssim \[输入\] 输出.avif</code></pre>
+    <p>参数说明：</p>
+    <ul>
+      <li>`-c aom` 指定编码器</li>
+      <li>`-s 4` 速度级别。4级及以下可获得最佳压缩质量，但编码时间更长</li>
+      <li>`-j 8` 编码线程数。超过12线程可能适得其反，建议通过基准测试确定最佳值</li>
+      <li>`-d 10` 位深。即使源图为8位，低于10位也会降低编码效率</li>
+      <li>`-y 444` 色度抽样模式。4:4:4通常优于4:2:0，但视图像内容而定</li>
+      <li>`cq-level=16` 质量参数。值越小质量越高（文件越大），需通过`-a`前缀作为aomenc参数传递</li>
+      <li>`tune=ssim` 率失真优化模式。虽可能与默认参数重复，但显式声明可避免未来默认值变更带来的意外影响</li>
+    </ul>
+  </div>
+</details>
+
+AVIF不支持渐进式解码——这是视频派生图像格式的通病。虽然可通过编码低/高双帧动画实现伪渐进加载（Firefox存在兼容问题），但这会进一步增加编码复杂度。
+
+最后，AVIF的无损模式表现欠佳，通常比PNG体积更大。如需无损压缩，建议避免使用AVIF。
+
+### 编码器
+
+#### AV1编码器
+
+理论上任何可用AV1编码器都能生成AVIF图像，因此功能完整的开源AVIF编码器列表与AV1编码器高度重合：
+
+- [libaom](../encoders/aomenc.mdx)
+- [SVT-AV1-PSY](../encoders/SVT-AV1-PSY.mdx)
+- [SVT-AV1](../encoders/SVT-AV1.mdx)
+- [rav1e](../encoders/rav1e.mdx)
+
+商业领域，Cloudinary（大��多媒体CDN）曾采用[Aurora1](../encoders/Aurora1.mdx)进行AVIF压缩，后已转向libaom。
+
+#### tinyavif
+
+Rachel Barker开发的[tinyavif](https://github.com/rachelplusplus/tinyavif)是一个极简AVIF编码器，旨在降低理解门槛。虽然功能不完整，但适合学习AVIF（及AV1）工作原理。这个Rust编写的项目自称为"世界最迷你的AV1编码器"。
+
+## 结论
+
+AVIF是值得考虑的强力网络图像格式。对于非高保真图像，其在多数情况下压缩率优于JPEG；在动态图像领域更是当前最佳选择。但无损压缩场景下表现不及PNG，建议避免使用。总体而言，AVIF特别适合对非高保真图像的压缩需求。

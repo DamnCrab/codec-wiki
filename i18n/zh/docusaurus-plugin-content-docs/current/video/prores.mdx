@@ -1,0 +1,40 @@
+---
+title: ProRes
+sidebar_position: 14
+---
+
+# ProRes
+
+ProRes是苹果公司开发的一系列有损视频压缩编解码器。该技术旨在作为高质量的"视觉无损"视频编辑编解码方案，相比其他编辑编解码器能提供更优异的画质，同时相较于未压缩视频仍能保持相对紧凑的文件体积。
+
+根据具体子集不同，ProRes采用4:2:2或4:4:4色度抽样。这比常见的8位4:2:0编解码器（如[AVC](../video/AVC.mdx)）能提供更高的色彩保真度和精度。
+
+ProRes压缩采用[离散余弦变换](../introduction/terminology.mdx#discrete-cosine-transform-dct)和帧内压缩技术，不应用帧间压缩——这意味着没有利用帧间冗余来提高压缩效率。这种设计保持了解码的轻量化，简化了编解码器结构。根据分辨率和具体ProRes变体的不同，该技术能以100-400 MB/s的较低数据率实现极高画质。
+
+## 格式详解
+
+ProRes提供多种变体，具有不同的画质与压缩比组合：
+
+格式 | 色度抽样 | 支持位深
+--- | :---: | ---:
+[ProRes RAW](https://www.apple.com/final-cut-pro/docs/Apple_ProRes_RAW.pdf) | 不适用 | 12位
+ProRes 4444 XQ | 4:4:4 | 10位、12位*
+ProRes 4444 | 4:4:4 | 10位、12位*
+ProRes HQ | 4:2:2 | 10位
+ProRes | 4:2:2 | 10位
+ProRes LT | 4:2:2 | 10位
+ProRes Proxy | 4:2:2 | 10位
+
+*注：ProRes 4444 XQ和4444支持12位色深，若包含无损alpha通道则为16位*
+
+高码率变体如4444 XQ和HQ优先保证最大保真度，代价是更大的文件体积。低码率变体则牺牲部分画质换取更小的文件体积，适合存储空间受限的编辑场景。
+
+## 应用场景
+
+苹果ProRes RAW格式可通过Atomos Ninja V在松下LUMIX相机和索尼Alpha FX3上使用。这两款摄像机都能以ProRes RAW格式录制12位未压缩RAW视频。
+
+由于出色的画质表现、处理性能、元数据处理能力以及与Final Cut Pro编辑软件生态的深度整合，ProRes已被专业视频后期制作流程广泛采用。
+
+除Final Cut Pro外，包括Adobe Premiere Pro和BlackMagic达芬奇调色系统在内的大多数主流非线性编辑系统都支持ProRes。这种跨平台兼容性使其成为不同视频编辑应用间交换素材的理想编解码方案。
+
+虽然主要定位为编辑编解码器，苹果公司已在搭载M2芯片及后续Apple Silicon的Mac设备中实现了ProRes编码/解码硬件加速。相比纯软件方案，这种硬件加速显著提升了回放、转码和导出等任务的性能表现。

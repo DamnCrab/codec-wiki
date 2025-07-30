@@ -1,0 +1,73 @@
+---
+title: 视频稳定化处理
+sidebar_position: 7
+---
+
+# 视频稳定化处理
+
+:::danger 需要协助
+本节内容亟待完善。如果您能提供帮助，请参阅我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+## 概述
+
+视频稳定化是通过[FFmpeg](../utilities/ffmpeg.mdx)减少视频片段中不必要的摄像机抖动和移动的过程。该技术能显著提升编码效率，尤其适用于处理手持设备拍摄的不规则全局运动画面。推荐使用VidStab库实现稳定化，这需要编译FFmpeg时启用`--enable-libvidstab`选项。
+
+VidStab提供两个FFmpeg滤镜：
+
+```shell
+ffmpeg -hide_banner -filters | grep vidstab
+ ... vidstabdetect     V->V       提取相对变换信息（稳定化处理的第一阶段，第二阶段需配合vidstabtransform使用）
+ ... vidstabtransform  V->V       应用帧变换（稳定化处理的第二阶段，需基于vidstabdetect生成的数据）
+```
+
+`vidstabdetect`滤镜用于首轮分析并生成变换数据文件（`.trf`），而`vidstabtransform`则在第二轮处理中应用这些变换参数。
+
+## 使用方法
+
+使用默认参数稳定视频的基本流程：
+
+```shell
+ffmpeg -i input.mp4 -vf vidstabdetect -f null -
+ffmpeg -i input.mp4 -vf vidstabtransform output.mp4
+```
+
+首条命令执行后会在当前目录生成`transforms.trf`文件。稳定化完成后可安全删除该文件。最终输出的`output.mp4`将显著减少画面抖动。
+
+针对高帧率强抖动视频的增强处理：
+
+```shell
+ffmpeg -i input.mp4 -vf vidstabdetect=shakiness=8:result=a.trf -f null -
+ffmpeg -i input.mp4 -vf vidstabtransform=smoothing=30:zoom=-5:input=a.trf output.mp4
+```
+
+:::tip 重要提示
+在`output.mp4`前务必设置正确的音视频编解码参数。禁止使用`-c:v copy`，因为视频需要经过变换处理。
+:::
+
+### vidstabdetect参数说明
+
+- `result` - 指定输出的`.trf`文件路径
+- `shakiness` - 抖动抑制强度，范围1（最弱）到10（最强），默认值为5
+- `accuracy` - 运动分析精度。数值越低CPU占用越少但精度下降。FFmpeg允许的最小值为3。实测处理速度：精度3时约21fps，精度15时约14fps
+
+完整参数列表请参阅[vidstabdetect官方文档](https://ffmpeg.org/ffmpeg-filters.html#vidstabdetect-1)
+
+### vidstabtransform参数说明
+
+- `input` - 指定由vidstabdetect生成的`.trf`文件路径
+- `smoothing` - 运动估算的参考帧范围，默认10帧
+- `zoom` - 变焦百分比（默认0%），负值产生缩小效果
+- `interpol` - 插值算法选择：
+  - `no` - 禁用插值
+  - `linear` - 仅水平方向
+  - `bilinear` - 速度较快但可能模糊（默认）
+  - `bicubic` - 速度较慢质量更高
+
+更多细节请参考[vidstabtransform官方文档](https://ffmpeg.org/ffmpeg-filters.html#vidstabtransform-1)
+
+## 注意事项
+
+- 稳定化处理属于有损操作，变焦和插值可能影响画质
+- 高稳定强度下可能产生画面整体波动现象，这是该滤镜的固有特性
+- 根据实际需求，可考虑结合二次编码技术进行优化处理

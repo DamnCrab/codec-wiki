@@ -1,0 +1,89 @@
+---
+title: ffmpeg
+sidebar_position: 3
+---
+
+# FFmpeg
+
+:::danger 需要帮助
+本节内容需要贡献者完善。若您能提供帮助，请查阅我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+[FFmpeg](https://ffmpeg.org/) 是一个多媒体框架，提供音视频转码、转封装和滤镜处理功能。它包含三个命令行工具：`ffmpeg`、`ffprobe` 和 `ffplay`。同时还提供 libav* 系列库，开发者可不通过命令行直接调用 FFmpeg 功能。
+
+# 安装方法
+
+根据操作系统不同，FFmpeg 有多种安装方式。
+
+### Linux & macOS
+
+**包管理器安装**
+
+最简便的方式是通过系统包管理器安装。多数情况下主包名为 `ffmpeg`，但 `ffprobe` 和 `ffplay` 可能需要单独安装。请注意软件源中的版本可能较旧。
+
+**源码编译**
+
+完整指南请参考 [FFmpeg 编译指南](https://trac.ffmpeg.org/wiki/CompilationGuide)。简而言之需要：
+- 获取[源代码](https://ffmpeg.org/download.html) 或通过 git 克隆：`git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg`
+- 进入目录后执行 `./configure --help` 查看可选编译特性
+- 安装所需依赖库
+- 通过 `--enable-` 参数配置编译选项后运行 `./configure`
+- 执行 `make`（Linux 建议使用 `make -j $(nproc)` 启用多核编译，macOS 使用 `make -j $(sysctl -n hw.ncpu)`）
+- 运行 `make install`（可能需要 root 权限）
+
+### Windows
+
+FFmpeg 不提供官方 Windows 二进制包，但可从以下第三方获取：
+- [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) 编译版本
+- [BtbN](https://github.com/BtbN/FFmpeg-Builds/releases) 编译版本
+
+# 使用指南
+`ffmpeg` 是 FFmpeg 的核心命令行工具，可接受多个输入/输出文件。
+
+注意：所有参数具有位置敏感性。例如 `ffmpeg -r 24 -i file1 file2` 中 `-r 24` 作用于输入文件 file1 的帧率解释，而 `ffmpeg -i file1 -r 24 file2` 中则作用于输出文件 file2 的帧率控制。完整参数请参阅 [FFmpeg 官方文档](//ffmpeg.org/ffmpeg-all.html)。
+
+#### 视频转码
+
+```bash
+ffmpeg -i [输入文件] -c:v [视频编码器] -b:v [视频比特率] -c:a [音频编码器] -b:a [音频比特率] 输出文件
+```
+
+| 参数                | 作用                                   |
+|---------------------|----------------------------------------|
+| `-c:v 视频编码器`   | 设置视频流的**编解码器**               |
+| `-b:v 视频比特率`   | 设置视频流的**比特率**                 |
+| `-c:a 音频编码器`   | 设置音频流的**编解码器**               |
+| `-b:a 音频比特率`   | 设置音频流的**比特率**                 |
+
+#### 视频转封装
+
+```bash
+ffmpeg -i [输入文件] -c copy [输出文件]
+```
+
+| 参数        | 作用                   |
+|-------------|------------------------|
+| `-c copy`   | 直接复制流数据不重编码 |
+
+#### 视频滤镜处理
+
+```bash
+ffmpeg -i [输入文件] -c:v [视频编码器] -c:a [音频编码器] (...) -vf [滤镜名称] 输出文件
+```
+
+| 参数             | 作用                 |
+|------------------|----------------------|
+| `-vf 滤镜名称`   | 应用指定的视频滤镜   |
+
+#### 容器格式选择
+
+FFmpeg 通常根据输出文件扩展名自动选择容器格式。如需手动指定，可使用 `-f` 参数。
+
+| 参数            | 作用                 |
+|-----------------|----------------------|
+| `-f 格式名称`   | 强制指定容器格式     |
+
+*参考资料：*
+*[^multimediawiki-howtos]: [HOWTO 搜索结果 - MultimediaWiki](//wiki.multimedia.cx/index.php?search=HOWTO&title=Special%3ASearch&go=Go)*
+
+*特别感谢 [bluefalcon 编码指南](https://encoding.bluefalcon.cc/)（CC BY-SA 4.0 许可），本文在格式和标题方面进行了调整。*

@@ -1,0 +1,31 @@
+---
+title: WebVTT
+---
+
+# WebVTT
+
+WebVTT（Web视频文本轨道）是用于网络字幕的格式。它与[HTML \<track\>元素](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track)配合使用，或内嵌于webm容器中。
+
+## 结构
+WebVTT是一种基于[SRT](./SRT.mdx)的简单文本格式。所有文件都以字符串`WEBVTT`开头（可选附带说明文本），随后空两行。从这里开始才是我们关注的实际数据内容。
+
+### 字幕单元
+
+WebVTT文件本质上由多个字幕单元组成。每个单元可以包含：
+- 一行ID标识（可选）
+- 一行时间轴标记：`开始时间 --> 结束时间 [可选参数]`
+- 需要显示的文字内容（可包含HTML式格式化标签）
+
+具体格式说明请参阅[官方文档](https://developer.mozilla.org/en-US/docs/Web/API/WebVTT_API#webvtt_cues)。
+
+## 示例
+```
+WEBVTT
+
+00:01.000 --> 00:04.000
+- 切勿饮用液氮
+
+00:05.000 --> 00:09.000
+- 它会穿透你的胃壁
+- 可能导致死亡
+```

@@ -1,0 +1,46 @@
+---
+title: Mediacodec
+sidebar_position: 5
+---
+
+# Mediacodec
+
+Android的MediaCodec框架是其多媒体框架的一部分，提供了对底层媒体编码器与解码器组件的访问。其功能类似于苹果设备上的[VideoToolbox](./videotoolbox.mdx)。通过MediaCodec实现的硬件加速可用于处理音频、视频及压缩数据。
+
+MediaCodec框架的核心特性之一是支持操作系统内部的自动媒体转码。自Android 12引入的这项功能，使得设备能够在使用更现代、存储效率更高的媒体格式进行视频录制的同时，保持与应用程序的兼容性。对于启用兼容媒体转码的设备，当应用打开不支持的格式（如[H.265](../video/HEVC.mdx)）视频时，Android可自动进行格式转换。这使得即使设备使用新格式录制视频，应用仍能正常运作。
+
+## 使用方法
+
+要查看设备通过MediaCodec框架支持的硬件和软件编解码器，建议下载开源的[Codec Info](https://play.google.com/store/apps/details?id=com.parseus.codecinfo)应用。
+
+了解如何正确调用设备硬件编码器后，可使用[FFmpeg](../utilities/ffmpeg.mdx)通过命令行轻松转码视频。
+
+### FFmpeg应用
+
+本文测试基于搭载Tensor G3 SoC的Google Pixel 8进行。该芯片采用Exynos架构，其[H.264](../video/AVC.mdx)、H.265(HEVC)和[VP9](../video/VP9.mdx)的硬件编码由Exynos多媒体模块提供，而AV1编解码功能则由Google定制多媒体模块实现。
+
+Exynos的H.264和H.265硬件编码实现不支持CQ（恒定质量）模式，因此必须为CBR（恒定比特率）或VBR（可变比特率）编码指定目标比特率。Google的AV1实现同样存在此限制。
+
+FFmpeg调用MediaCodec的编码示例命令：
+
+```bash title="H.264编码（VBR模式，目标比特率4000K，GOP长度250帧）"
+ffmpeg -i input.mkv -c:v h264_mediacodec -codec_name c2.exynos.h264.encoder -bitrate_mode 1 -b:v 4000K -g 250 output.mp4
+```
+
+```bash title="H.265编码（VBR模式，目标比特率4000K，GOP长度250帧）"
+ffmpeg -i input.mkv -c:v hevc_mediacodec -codec_name c2.exynos.hevc.encoder -bitrate_mode 1 -b:v 4000K -g 250 output.mp4
+```
+VP9编码会出现严重失真的情况，而AV1编码会生成元数据损坏的文件。
+
+```bash title="VP9编码（VBR模式，目标比特率9000K，GOP长度250帧）"
+ffmpeg -i input.mkv -c:v vp9_mediacodec -codec_name c2.exynos.vp9.encoder -bitrate_mode 1 -b:v 9000K -g 250 output.mkv
+```
+```bash title="AV1编码（VBR模式，目标比特率8000K，GOP长度250帧）"
+ffmpeg -i input.mkv -c:v av1_mediacodec -codec_name c2.google.av1.encoder -bitrate_mode 1 -b:v 8000K -g 250 output.mp4
+```
+
+运行`ffmpeg -help encoder=hevc_mediacodec`或`ffmpeg -help encoder=h264_mediacodec`可获取更多编码器使用信息。`-codec_name`参数值可参考Codec Info应用显示的设备支持编解码器。
+
+*参考资料*
+(1) MediaCodec | Android开发者文档. https://developer.android.com/reference/android/media/MediaCodec
+(2) 媒体系统 | Android开源项目. https://source.android.com/docs/core/media

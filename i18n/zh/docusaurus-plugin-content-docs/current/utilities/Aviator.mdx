@@ -1,0 +1,116 @@
+---
+title: Aviator
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Aviator
+
+Aviator 是一款专为 Linux 系统设计的图形界面应用程序，通过 [SVT-AV1](../encoders/SVT-AV1.mdx)、[libopus](../audio/Opus.mdx) 和 [ffmpeg](../utilities/ffmpeg.mdx) 提供用户友好且直观的 [AV1](../video/AV1.mdx) 视频与 Opus 音频编码方案。该软件以易用性为核心设计理念，同时通过搭载 SVT-AV1-PSY 编码器的智能默认配置，力求实现单位比特率下的最佳画质表现。
+
+<img width="640" height="360" src="https://raw.githubusercontent.com/gianni-rosato/aviator/main/assets/aviator_splash2.avif" alt="Aviator 启动界面"/>
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux">
+        Aviator 可通过 Flathub 以 Flatpak 形式安装在 Linux 系统上。具体配置方法请参考 [Flatpak 官方指南](https://flatpak.org/setup/)。请注意不要通过 AUR 安装本软件。
+
+        <a href="https://flathub.org/apps/details/net.natesales.Aviator"><img width="200" alt="通过 Flathub 下载" src="https://flathub.org/assets/badges/flathub-badge-en.png"/></a>
+
+        若已配置好 Flatpak 环境，您可通过终端执行以下命令安装：
+
+        ```bash
+        flatpak install flathub net.natesales.Aviator
+        ```
+
+        选用 Flatpak 打包方案可确保 Aviator 自带沙盒化依赖组件，为所有 Linux 用户提供一致的体验。最大优势在于始终包含最新稳定的 SVT-AV1-PSY 实现，且不会调用系统自带的（可能与 Aviator 自定义参数不兼容的）SVT-AV1 版本。
+
+        如需从源码编译安装，请执行以下命令。若缺少依赖项，`make` 命令会给出提示，您可根据提示安装相应组件：
+
+        ```bash
+        git clone https://github.com/gianni-rosato/aviator
+        cd aviator
+        make
+        ```
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+            :::caution 有限支持
+Windows 平台通过 **WSL2** 提供"尽力而为"的兼容支持。在 Windows 上运行 Aviator 很可能会遇到兼容性问题。
+:::
+
+        通过 WSL2 在 Windows 11 上运行需先配置 Arch Linux 环境，具体步骤请参考 [rAV1ator CLI](../utilities/rav1ator-cli.mdx#windows) 的 WSL2 教程。
+
+        配置好 WSL2 后，在 Linux 环境中执行以下命令安装 Flatpak（**执行来自互联网的 sudo 命令时请务必谨慎**）：
+
+        ```bash
+        sudo pacman -Syu # 更新系统
+        sudo pacman -S flatpak # 安装 flatpak
+        sudo systemctl enable --now dbus # 启�� dbus 服务
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo # 添加 flathub 仓库
+        ```
+        执行 `flatpak --version` 可验证安装是否成功。
+
+        接着安装 GNOME 平台相关依赖：
+
+        ```bash
+        sudo flatpak install org.gnome.Sdk # 选择选项15
+        sudo flatpak install org.gnome.Platform # 选择选项14
+        ```
+        最后安装 Aviator：
+
+        ```bash
+        sudo flatpak install flathub net.natesales.Aviator
+        ```
+        运行命令启动程序：
+
+        ```bash
+        flatpak run net.natesales.Aviator
+        ```
+        至此安装完成，祝您编码愉快！
+    </TabItem>
+</Tabs>
+
+## 默认配置
+
+将鼠标悬停在 Aviator 的可配置选项上可查看功能提示说明。
+
+### 感知优化
+
+Aviator 采用专为感知质量优化的 [SVT-AV1-PSY 分支版本](https://github.com/gianni-rosato/svt-av1-psy)，而非主线 SVT-AV1。该版本包含多项独特改进，包括基于 [SSIM](../metrics/SSIM.mdx) 的自定义 [RDO](../introduction/psychovisual.mdx) 调优算法。更多技术细节请参阅 [SVT-AV1](../encoders/SVT-AV1.mdx#community-forks) 条目。
+
+默认 FFmpeg 编码参数如下（部分参数与默认值重复）：
+
+```bash
+-c:v libsvtav1 -crf X -preset X -pix_fmt yuv420p10le -svtav1-params film-grain=X:irefresh-type=2:input-depth=10:tune=3:sharpness=1:qm-min=0:keyint=300:aq-mode=2:enable-qm=1:film-grain-denoise=X
+```
+
+### 视频设置
+
+<img width="678" height="567" src="https://raw.githubusercontent.com/gianni-rosato/aviator/main/assets/aviator_video.webp" alt="Aviator 视频设置界面" loading="lazy" />
+
+默认输出分辨率与源文件保持一致。手动修改任一分辨率值将根据视频宽高比自动计算另一数值。SVT-AV1 速度预设默认为 6，CRF（恒定速率因子）默认值 32。CRF 取值范围 0-63，数值越大文件体积越小但画质越低。各速度预设的详细说明请参阅[官方文档](https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/CommonQuestions.mdx#what-presets-do)。速度预设 7 在任何 CRF 等级下都能提供较好的速度与压缩效率平衡。
+
+设置与源视频宽高比不符的值时，输出视频将根据"裁剪"选项决定拉伸或裁剪处理。
+
+"颗粒合成"滑块可为视频添加模拟自然颗粒效果的伪噪点。该选项在解码时以滤镜形式应用，能显著提升含颗粒视频的编码保真度。"降噪"开关则会在添加人工颗粒前先消除原始噪点。
+
+### 音频设置
+
+<img width="678" height="567" src="https://raw.githubusercontent.com/gianni-rosato/aviator/main/assets/aviator_audio.webp" alt="Aviator 音频设置界面" loading="lazy" />
+
+Opus 音频默认比特率 80kb/s。"复制音频"开关可保留原始音频流，多声道音频可通过对应开关下混为立体声。本节还提供音量调节与响度标准化功能：音量滑块按分贝单位调节输出音量（负值降低音量），标准化开关可统一感知响度。
+
+启用"复制音频"将禁用 WebM 输出（避免潜在兼容问题），同时覆盖音频页所有选项以保持原始音频流。该选项确保音频不经重新编码。
+
+### 输出设置
+
+<img width="678" height="567" src="https://raw.githubusercontent.com/gianni-rosato/aviator/main/assets/aviator_output.webp" alt="Aviator 输出设置界面" loading="lazy" />
+
+视频容器格式与文件扩展名关联。Aviator 提供 [Matroska](../introduction/terminology.mdx#mkv--mka--mks--mk3d) 和 [WebM](../introduction/terminology.mdx#webm) 两种输出容器：默认采用开源的 .MKV 通用多媒体容器，WebM 则专为网页兼容性设计。由于 WebM 仅官方支持 [WebVTT](../subtitles/webvtt.mdx) 字幕格式，Aviator 不会将字幕复制至 WebM 输出。两种容器均原生支持 AV1 视频与 Opus 音频，但当启用"复制音频"时将强制禁用 WebM 输出以确保格式合规。
+
+## 开发团队
+
+Aviator 由 [Gianni Rosato](https://github.com/gianni-rosato/) 主导开发。

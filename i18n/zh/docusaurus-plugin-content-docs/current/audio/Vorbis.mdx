@@ -1,0 +1,24 @@
+---
+title: Vorbis
+sidebar_position: 5
+---
+
+# Vorbis
+
+:::danger 需要帮助
+本节内容亟待完善。如果您能提供帮助，请参阅我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+Vorbis是由Xiph.org基金会维护的开源音频编解码器，最初于2000年发布。该编码器已被Spotify等平台广泛采用并取得巨大成功，同时也是Minecraft游戏音效与音乐的默认音频编解码方案。目前其地位已逐渐被[Opus](../audio/Opus.mdx)编解码器取代。
+
+## 使用方法
+Vorbis编解码器可通过[ffmpeg](../utilities/ffmpeg.mdx)工具进行操作。
+### 编码器
+```bash
+ffmpeg -i input.wav -c:a libvorbis output.ogg
+```
+### 解码器
+```bash
+ffmpeg -i input.ogg output.wav
+```
+更多参数选项请参考[ffmpeg](../utilities/ffmpeg.mdx)文档。

@@ -1,0 +1,31 @@
+---
+title: YUView
+sidebar_position: 13
+---
+
+# YUView
+
+<picture>
+    <source srcset="/img/yuview.avif" type="image/avif" />
+    <img src="/img/yuview.webp" alt="YUView界面" />
+</picture>
+<br/><br/>
+
+[YUView](https://github.com/IENT/YUView) 是由[IENT](https://github.com/IENT/)（通信技术研究所）开发的一款免费开源的跨平台软件，主要用于处理、播放和分析YUV文件。
+得益于FFmpeg和其他第三方解码器的支持，该软件不仅限于YUV格式，同时提供了丰富的[HEVC](/docs/video/HEVC)内部可视化选项，如切片索引和变换深度分析。
+
+该软件基于QT框架并使用C++编写。
+
+
+## 安装指南
+
+IENT在其GitHub[发布页面](https://github.com/IENT/YUView/releases/)提供了所有主流桌面操作系统的完整二进制包，用户可根据系统选择对应版本。
+
+在Linux系统上，Ubuntu官方仓库和Arch Linux的AUR（Arch用户软件库）均已收录YUView。此外发行版中还提供了AppImage打包格式和[Flatpak](https://flathub.org/apps/de.rwth_aachen.ient.YUView)安装方式。
+
+如需从源代码编译，官方提供了详细的[编译教程](https://github.com/IENT/YUView/wiki/Compile-YUView)。
+
+
+## 使用说明
+
+通过左上角"文件">"打开文件"菜单或快捷键Ctrl+O导入文件（支持多文件同时导入），随后即可进行各类分析操作，包括查看运动矢量、分离YCbCr色彩空间中的Cb分量等。

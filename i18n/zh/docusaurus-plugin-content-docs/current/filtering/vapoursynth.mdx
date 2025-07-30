@@ -1,0 +1,111 @@
+---
+title: Vapoursynth
+sidebar_position: 2
+---
+
+# Vapoursynth
+
+> VapourSynth 是一个视频处理工具。或者说它是一个插件。又或者是一个库。很难界定它的属性，因为它由C++编写的核心库和用于创建视频脚本的Python模块共同构成。
+
+*Fredrik Mellbin，VapourSynth 创始人*
+
+<picture>
+  <source
+    srcset="https://raw.githubusercontent.com/av1-community-contributors/images/main/vs_edit_script.avif?token=GHSAT0AAAAAACEZPDXJ6SHSUQIMUOGQXQTEZHY7K4A"
+    type="image/avif"
+  />
+  <img
+    src="https://autumn.revolt.chat/attachments/g7DucEq3aRGWVH0MHQe-A21GkyDVln9IHzRlfjEYEh/vs_edit_script.png"
+    alt="Vapoursynth脚本"
+    width="520"
+    height="632"
+  />
+</picture>{" "}
+
+# 简介
+
+在视频处理领域，我们经常会遇到存在各种质量问题的媒体文件。这些问题从轻微瑕疵到严重退化不等，包括：
+
+- 因不可预测性导致比特率激增的过量胶片颗粒或噪点
+- 可见的带状伪影
+- 物体周围不必要的光晕
+- 老旧未修复素材中的隔行扫描问题
+- 胶片转视频过程中不当操作产生的电视电影伪影
+- 更多示例请参��我们的[视频伪影](../introduction/video-artifacts.mdx)页面
+
+为解决这些挑战，我们需要使用视频滤镜技术。目前主要有三大软件框架用于视频滤镜处理：
+
+1. [FFmpeg](../utilities/ffmpeg.mdx)
+2. [VapourSynth](https://vapoursynth.com)
+3. [AviSynth](http://avisynth.nl/index.php/Main_Page)
+
+VapourSynth 是对 AviSynth（由 Ben Rudiak-Gould 等人在2000年5月创建）的21世纪升级重构版本。这次彻底重写最吸引人的特性之一是其改进的多线程能力——这正是 AviSynth 因其陈旧架构而备受掣肘的领域。
+
+部分长期使用 AviSynth 的用户可能不愿转向 VapourSynth，更倾向于保持熟悉的工作流程。这种选择无可厚非，毕竟两种工具在视频处理中各有优势。不过需要说明的是，Codec Wiki 的*滤镜处理*章节将主要聚焦 VapourSynth（偶尔涉及 FFmpeg）。值得注意的是，使用 VapourSynth 需要具备基本的 Python 知识，因为其滤镜处理过程涉及脚本编写。
+
+## 安装指南
+
+### Windows 系统
+
+- 当前需要 Python 3.12 环境（未来可能变更，请参考[官网说明](http://www.vapoursynth.com/doc/installation.html)）
+- 下载安装程序（`.exe`），除非需要便携版
+- 运行安装
+
+### Arch Linux
+
+目前 Arch 是最适合 Vapoursynth 工作的 Linux 发行版，因为绝大多数滤镜和插件都能通过 AUR 获取。这使得安装和更新滤镜变得十分便捷。我们建议使用 paru 或 yay 等 AUR 辅助工具。
+
+安装基础包：
+`pacman -S vapoursynth`
+
+插件均以 `vapoursynth-plugin-` 为前缀，例如 `vapoursynth-plugin-lsmashsource-git`，便于搜索安装。
+
+### 其他 Linux 发行版
+
+Vapoursynth 支持所有 Linux 发行版，具体安装方法因发行版而异。
+欢迎贡献其他发行版的安装指南。
+
+## 预览工具
+
+目前有两款主流的 Vapoursynth 预览器。如需具备跳转等功能的脚本预览，需选用以下工具之一：
+
+1. **Vapoursynth Editor**（YomkioR 开发）：集成代码编辑器与视频预览器，新手友好
+2. **vs-preview**（JET 分支版）：独立预览器，支持裁剪、截图、对比上传等高级功能，需配合 VS Code 等编辑器使用
+
+## 视频输出
+
+Vapoursynth 提供 `vspipe` 命令行工具输出处理后的视频。通过该工具传输 y4m 视频是最常见的编码器对接方式，例如：
+
+`vspipe -c y4m input.vpy - | x264 --demuxer y4m -o output.mkv -`
+
+## 源滤镜
+
+Vapoursynth 需要通过源滤镜加载视频素材。基础方法如 `BlankClip` 可创建指定分辨率的空白片段：
+
+```python
+import vapoursynth as vs
+core = vs.core
+clip = core.std.BlankClip(width=640, height=480)
+clip.set_output(0)
+```
+
+实际应用中，我们主要使用以下源滤镜：
+
+### LSmashSource
+基于 lsmash 库的通用源滤镜，对多数格式稳定可靠（某些格式如 VC-1 可能存在帧精度问题）
+```python
+clip = core.lsmas.LWLibavSource(source="input.mkv")
+```
+
+### ffms2
+基于 FFmpeg 的备选方案，git 版本已支持 AV1 等新格式
+```python
+clip = core.ffms2.Source(source="input.mkv")
+```
+
+### BestSource
+通过全视频解码确保绝对帧精度，首次加载需建立索引缓存
+```python
+clip = core.bs.VideoSource(source="input.mkv", cachepath="/")
+```
+（设置 `cachepath="/"` 可使索引文件与源视频同目录存储）

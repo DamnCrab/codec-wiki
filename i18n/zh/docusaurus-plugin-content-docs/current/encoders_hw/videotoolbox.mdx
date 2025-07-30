@@ -1,0 +1,49 @@
+---
+title: VideoToolbox
+sidebar_position: 4
+---
+
+# VideoToolbox
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+苹果的VideoToolbox是一个底层框架，可直接访问硬件编码器和解码器。它提供视频压缩与解压缩服务，以及CoreVideo像素缓冲区中存储的光栅图像格式之间的转换。VideoToolbox编码器通过压缩视频数据来满足低延迟会议、直播和离线转码等多种应用场景。该技术支持2011年后大多数Mac设备的硬件编码，并在配备Apple T2芯片或Apple Silicon的设备上使用苹果媒体引擎。
+
+该编码器可针对特定应用场景进行优化配置，支持多种视频编解码器，包括[H.264](../video/AVC.mdx)、[H.265](../video/HEVC.mdx)，其中H.265支持8位和10位编码。值得注意的是，VideoToolbox编码器专为需要直接访问硬件编解码器的应用而设计。
+
+苹果VideoToolbox框架还支持多种视频编解码器的硬件加速解码。截至Apple M3芯片，支持范围包括[H.264](../video/AVC.mdx)、[H.265](../video/HEVC.mdx)、[ProRes](../video/prores.mdx)、ProRes RAW和[AV1](../video/AV1.mdx)。
+
+## 使用方法
+
+在macOS上可通过多功能命令行工具[FFmpeg](../utilities/ffmpeg.mdx)或图形界面编码工具Handbrake使用VideoToolbox进行编码。
+
+### FFmpeg
+
+要通过VideoToolbox在macOS上使用H.264或H.265（HEVC）硬件编码，只需分别使用编码器参数`-c:v h264_videotoolbox`或`-c:v hevc_videotoolbox`。
+
+以下是使用FFmpeg在Apple Silicon设备上通过VideoToolbox编码的示例命令：
+
+```bash title="H.264编码（高级配置文件）"
+ffmpeg -i input.mkv -c:v h264_videotoolbox -profile 100 -q:v [0-100] output.mp4
+```
+
+```bash title="8位HEVC编码（主配置文件）"
+ffmpeg -i input.mkv -c:v hevc_videotoolbox -profile 1 -q:v [0-100] -tag:v hvc1 output.mp4
+```
+
+```bash title="10位HEVC编码（Main10配置文件）"
+ffmpeg -i input.mkv -c:v hevc_videotoolbox -profile 2 -q:v [0-100] -tag:v hvc1 output.mp4
+```
+
+运行`ffmpeg -help encoder=hevc_videotoolbox`或`ffmpeg -help encoder=h264_videotoolbox`可获取更多信息。
+
+### Handbrake
+
+待补充。
+
+*资料来源*
+(1) Video Toolbox | Apple开发者文档. https://developer.apple.com/documentation/videotoolbox.
+(2) HandBrake文档 — Apple VideoToolbox. https://handbrake.fr/docs/en/latest/technical/video-videotoolbox.html.
+(3) 苹果T2芯片为大多数用户带来视频编码性能的巨大提升. https://appleinsider.com/articles/19/04/09/apples-t2-chip-makes-a-giant-difference-in-video-encoding-for-most-users.

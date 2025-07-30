@@ -1,0 +1,185 @@
+---
+title: JPEG XL
+sidebar_position: 7
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# JPEG XL
+
+JPEG XL（JXL）是由联合图像专家组（JPEG）于2020年开发的图像压缩格式。该格式旨在保持图像质量的同时，提供比传统[JPEG](./JPEG.mdx)格式更高效的压缩性能。
+
+JPEG XL通过结合感知色彩编码和高级熵编码等技术实现卓越的压缩表现。其独有的无损JPEG重压缩模式可将现有JPEG文件转换为体积更小的JXL文件，且解码后能精确还原原始JPEG的每一个比特。
+
+## 技术特性清单
+
+支持无损？*是*
+
+支持有损？*是*
+
+支持位深：
+*最高32位/通道*
+
+支持HDR/广色域？*是*
+
+支持动画？*是*
+
+支持透明度？*是*
+
+支持渐进式解码？*是*
+
+免专利费？*是*
+
+## 格式详解
+
+根据[JPEG XL官方页面](https://jpegxl.info)介绍，该格式具有以下突出特性：
+
+- **最佳的无损图像压缩**：相比PNG可减小约35%文件体积（HDR图像可达50%）
+- **高保真有损压缩**：相同视觉质量下比JPEG减小约60%体积
+- **渐进式解码**：支持在完整下载前显示低质量预览，提升弱网用户体验
+- **无损JPEG转码**：可将JPEG转换为体积缩小约20%的JXL文件且零质量损失
+- **通用图像支持**：适用于照片、图形、插画等多种图像类型
+- **高速编解码**：优化的算法实现快速加载和保存
+- **完整广色域/HDR支持**：完美适配现代显示设备
+- **感知优化编码器**：基于人类视觉特性进行质量优化
+
+### 无损压缩表现
+
+JPEG XL在16位色深图像（特别是日益流行的HDR图像）压缩方面表现卓越。以[这张16位AdobeRGB PNG](https://imgsaver.com/images/2023/10/03/16bit.png)为例，使用命令：`cjxl 16bit.png 16bit.jxl -d 0.0 -e 9 -I 100 -g 3 -E 11`
+
+16位PNG：`1533373`字节
+16位JXL：`1211029`字节
+
+### 有损压缩优势
+
+在人类视觉敏感的质量区间，JPEG XL相比JPEG可实现约60%的体积缩减。虽然AVIF等视频衍生编码在比特效率上更优，但JXL在中高保真照片压缩领域兼具速度与效率优势。
+
+### 位深支持
+
+最高32位/通道的位深支持使其完美适配智能手机拍摄的HDR照片。随着Adobe、Apple等行业巨头已接纳该格式，JXL有望成为未来网络HDR内容的首选载体。
+
+### 渐进式解码技术
+
+JPEG XL实现了真正的渐进式解码（可在Safari等支持浏览器中体验）。这项技术允许先渲染低频变换系数，在网络传输完成前显示图像轮廓，配合模糊哈希技术可进一步提升弱网环境下的用户体验。
+
+### 无损JPEG重压缩
+
+这项独有技术可将JPEG文件无损转换为体积缩小约20%的JXL格式，这也是Meta等公司支持该格式的重要原因——为现有网络JPEG资源提供平滑升级路径。
+
+### 行业支持现状
+
+根据维基百科记载，包括Facebook、Adobe、Intel、VESA、The Guardian、Flickr、Shopify、Krita基金会等机构均已公开表示支持JPEG XL。Apple更是在iOS 17和macOS Sonoma中实现全生态支持。
+
+### 其他特性
+
+凭借丰富的功能集，JPEG XL有望取代TIFF成为创作流程的标准格式，其特色还包括：
+
+- 单边超过10亿像素（2^30-1）的尺寸支持
+- 最高4099个通道（含透明通道）
+- 零时长多帧支持（实现图形软件图层功能）
+- 动画支持（媲美GIF）
+- 分块存储加速解码
+- 平滑的质量渐变曲线
+- 基于感知色彩空间的自适应量化
+- 无需专用硬件的高效编解码（速度与libjpeg-turbo相当）
+- 完全开源免专利费
+
+## 编码器选��
+
+当前主要有以下几款JXL编码器可供选择：
+
+### libjxl
+
+官方[libjxl](https://github.com/libjxl/libjxl)实现包含完整的编解码功能。
+
+<Tabs>
+    <TabItem value="enc" label="编码" default>
+        
+        `cjxl`编码器支持三个核心参数：距离(`-d`)、质量(`-q`)和强度(`-e`)。
+
+        **距离与质量**
+        * 距离参数(0.0-25.0)表示可察觉失真程度：0.0为数学无损，1.0为视觉无损
+        * 质量参数(0-100)对应JPEG标准：100为数学无损，90为视觉无损
+
+        **强度等级**
+        强度参数(1-9)类似视频编码的`cpu-used`，数值越高压缩率越高但耗时越长。
+
+        ```bash title="使用强度9和距离1.0编码"
+        cjxl -e 9 -d 1.0 example.png example.jxl
+        ```
+
+        ```bash title="默认启用无损JPEG压缩"
+        cjxl example.jpg example.jxl
+        ```
+
+    </TabItem>
+    <TabItem value="dec" label="解码">
+        使用`djxl`解码器：
+        ```bash
+        djxl example.jxl example.png
+        ```
+        支持输出格式包括PNG、APNG（动画）、JPG、PPM、PFM等。
+
+        对于无损JPEG重压缩文件，默认会还原原始JPEG。如需重新编码：
+        ```bash
+        djxl -j example.jxl example.jpg
+        ```
+        **注��此过程将引入有损压缩**
+    </TabItem>
+    <TabItem value="build" label="编译">
+        简化版编译指南（适用于Linux/macOS）：
+
+        ```bash title="1. 克隆仓库"
+        git clone https://github.com/libjxl/libjxl.git --recursive --shallow-submodules
+        ```
+
+        ```bash title="2. 安装依赖"
+        apt install cmake pkg-config libbrotli-dev clang # Debian
+        pacman -Syu cmake pkgconf brotli clang # Arch
+        brew install cmake pkg-config brotli # macOS
+        ```
+
+        ```bash title="3. 设置编译环境"
+        export CC=clang CXX=clang++
+        ```
+
+        ```bash title="4. 编译优化版"
+        cd libjxl && mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-O3 -march=native" -DCMAKE_C_FLAGS="-O3 -march=native" -DBUILD_TESTING=OFF -DJPEGXL_WARNINGS_AS_ERRORS=OFF -DJPEGXL_ENABLE_SJPEG=OFF ..
+        cmake --build . -- -j$(nproc)
+        ```
+        macOS支持状态参见官方说明。
+    </TabItem>
+</Tabs>
+
+### libjxl-tiny
+
+[libjxl-tiny](https://github.com/libjxl/libjxl-tiny)是面向无透明通道照片的简化编码器，适合硬件实现场景。该项目近十个月未更新。
+
+### Hydrium
+
+[Hydrium](https://github.com/Traneptora/hydrium)是Traneptora开发的低内存流式编码器，采用可移植C语言编写。
+
+### zune-jpegxl
+
+[zune-jpegxl](https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpegxl)是Rust实现的安全模块化编码器，支持：
+- 无损编码
+- 8/16位色深
+- 灰度/RGBA编码
+- 多线程处理
+
+## 解码器方案
+
+### jxl-oxide
+
+[jxl-oxide](https://github.com/tirr-c/jxl-oxide)是Wonwoo Choi开发的纯Rust实现规范兼容解码器。
+
+{}
+
+参考来源：
+- [维基百科JPEG XL词条](https://en.wikipedia.org/wiki/JPEG_XL)
+- [JPEGXL.info技术解析](https://jpegxl.info/why-jxl.html)
+- [Apple技术公告](https://webkit.org/blog/14205/news-from-wwdc23-webkit-features-in-safari-17-beta/#images)
+- [Cloudinary技术分析](https://cloudinary.com/blog/jpeg-xl-how-it-started-how-its-going)
+- [专业图像对比](https://giannirosato.com/blog/post/image-comparison/)

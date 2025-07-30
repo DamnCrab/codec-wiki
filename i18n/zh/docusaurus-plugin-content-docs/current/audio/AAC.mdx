@@ -1,0 +1,70 @@
+---
+title: AAC音频编码标准
+title: AAC音频编码标准
+description: 探索AAC音频编解码器，包括其多种配置方案、编码器及应用场景
+keywords: [AAC, 高级音频编码, 音频编解码器, 音频, 编解码器, 音频编码, 音频解码, 音频压缩, 音频质量, 音频格式, 音频文件格式, 音频文件, 音频文件类型, 音频文件扩展名, 音频文件格式]
+sidebar_position: 2
+---
+
+# AAC音频编码标准
+
+AAC（高级音频编码）是多种不同编解码器的统称。当人们提及AAC时，通常指的是1997年作为原始AAC标准开发的AAC-LC配置方案（虽然存在MPEG-2 AAC与更新的MPEG-4 AAC版本之分）。该标准还发展出以下变体：
+- AAC-LC（低复杂度AAC）
+- AAC-LD（低延迟AAC）
+- AAC-ELD（增强型低延迟AAC）
+- HE-AAC（高效AAC，采用频带复制技术）
+- HE-AACv2（高效AAC v2，结合频带复制与参数化立体声）
+- xHE-AAC（扩展高效AAC，采用统一语音音频编码USAC）
+
+AAC还被用作蓝牙音频编解码器，用于编码音频流并传输至蓝牙音频设备。某些变体的编解码过程较为复杂，需分别探讨。
+
+## 格式详解
+
+### AAC-LC
+虽然与AAC Main和AAC-SSR两个高复杂度配置同期推出，AAC-LC通过与AVC视频配对等方式，在视频和音频领域获得更广泛应用。该格式在苹果生态中无处不在，也是YouTube在转向Opus之前的主力音频格式。几乎所有编码器都支持AAC-LC编码。
+
+### AAC-LD与AAC-ELD
+专为低延迟场景设计，两者效率远超早期低延迟音频编码方案。AAC-ELD通过频带复制技术实现更低延迟、更宽质量范围（最低比特率更低/最高比特率更高）。
+
+### HE-AAC
+通过频带复制(SBR)技术提升低比特率下的音质。SBR使解码器能根据低频信号和辅助数据重建高频信息，显著提升低码率效率（高码率时优势减弱）。
+
+### HE-AACv2
+新增参数化立体声(PS)技术，通过单声道信号与空间信息重建立体声，结合SBR进一步优化低码率表现。
+
+### xHE-AAC
+整合HE-AACv2与USAC压缩技术，特别适用于极低比特率场景。USAC能自动选择最优编码方案以适应不同音源特性。当前仅QuickTime Player（Mac）、Windows 11和Android原生支持播放，Windows 10/Linux用户可通过foobar2000的32位插件实现。
+
+## 编码器选型
+
+### Fraunhofer FDK AAC
+[弗劳恩霍夫研究所](https://en.wikipedia.org/wiki/Fraunhofer_Society)开发的高质量开源编码器，支持：
+`AAC-LC AAC-LD AAC-ELD HE-AAC HE-AACv2`
+注意：因专利授权问题存在GPL兼容性争议。
+
+### Core Audio
+苹果私有编码器，通过macOS的`afconvert`或FFmpeg的`aac_at`调用。Windows用户可通过[qaac](https://github.com/nu774/qaac)工具链实现，需配合iTunes或提取相关库文件。
+支持格式：`AAC-LC, HE-AAC, HE-AACv2`*
+*注：HE-AACv2仅限macOS
+
+### FFmpeg AAC
+完全开源的GPL/LGPL方案，基础功能完备但特性有限。通过`-c:a aac`调用，支持：
+`AAC-LC`
+
+### FAAC
+较陈旧的免费编码器，仅支持`AAC-LC`，质量一般。
+
+### Nero AAC
+2010年停止更新的私有编码器，曾以尚可的质量支持：
+`AAC-LC, HE-AAC, HE-AACv2`
+
+### Exhale
+目前唯一支持`xHE-AAC`的开源编码器，尽管性能不及商业方案。
+
+## 替代方案对比
+- Opus：在HE-AACv2/xHE-AAC同级竞争中表现优异，完全免版税且工具链更友好
+- Vorbis：完全免版税但整体稍逊
+- MP3：已显过时
+- FLAC：无损格式，适用场景不同
+
+注：xHE-AAC在极低码率下仍优于Opus，需根据具体需求权衡选择。

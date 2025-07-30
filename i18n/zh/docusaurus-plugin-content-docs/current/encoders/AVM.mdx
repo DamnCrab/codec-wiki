@@ -1,0 +1,77 @@
+---
+label: AVM
+sidebar_position: 15
+---
+
+# AVM 视频编码模型
+
+> AVM（AOM Video Model）是开放媒体联盟下一代编解码器的参考实现软件
+
+[AVM](https://gitlab.com/AOMediaCodec/avm)（全称**A**OM **V**ideo **M**odel）是开放媒体联盟（Alliance for Open Media）未来编解码器的参考实现，该组织也是[AV1](../video/AV1.mdx)的开发者。
+该代码库采用Clear BSD许可证，目前仅能生成`av01`格式的码流。
+
+AVM编解码器目前仍在开发中，尚未达到生产可用状态。相关文档和测试资料较为有限。
+
+## 技术传闻
+
+通过代码库可以确认新编码器的部分特性，但在正式标准化发布前这些变更都可能调整。
+
+关于该编解码器的传闻包括：
+
+- 新编解码器将命名为AV2，作为AV1的继任者
+- 基于AV1架构开发，保留部分向后兼容特性
+- 可通过GPU着色器和现有AV1解码硬件实现免版税（royalty-free）的硬件解码
+- 开放媒体联盟计划在ISO/ITU标准发布周期中期推出新编解码器，这意味着"AV2"或将与[VVC](../video/VVC.mdx)竞争，而非[ECM](../video/ECM.mdx)
+- 采用0-255的标准量化器范围
+- 针对AV1高保真编码存在的问题，AVM通过改进降噪算法来缓解[蚊式噪声](../introduction/video-artifacts.mdx#mosquito-noise)
+
+## 安装指南
+
+### Arch Linux系统
+
+可通过Arch用户仓库(AUR)安装`avm`或`avm-git`软件包。
+
+### 编译安装
+
+由于编码器处于密集开发阶段，目前不提供预编译二进制文件，需自行编译。
+Windows用户建议使用[MSYS2](https://msys2.org/)中的MinGW-W64进行编译。
+
+:::caution
+编译需要CMake、Nasm和Perl环境支持
+:::
+
+```bash
+git clone https://gitlab.com/AOMediaCodec/avm.git
+cd avm/build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=0
+make -j$(nproc)
+```
+
+该项目规模较大，编译耗时取决于CPU性能。
+
+生成的二进制文件命名为`aomenc`（与AV1编码器同名），位于`build`目录。Linux系统可通过`make install`命令安装（可能需要管理员权限）。
+
+## 使用说明
+
+:::tip
+AVM的QP值与aomenc的`cq-level`、SVT-AV1的`crf`参数换算关系为：原值×4。例如`--cq-level 20`对应`--quantizer 60`
+:::
+
+Y4M输入文件使用QP65编码为IVF格式：
+```bash
+aomenc --qp=65 -o output.ivf input.y4m
+```
+
+预设级别6（数值越高速度越快），QP65，Y4M输入：
+```bash
+aomenc --qp=65 --cpu-used=6 -o output.ivf input.y4m
+```
+
+通过FFmpeg管道输入：
+```bash
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | aomenc --qp=65 --cpu-used=6 -o output.ivf -
+```
+
+## aomdec解码器
+
+需要同时编译`aomdec`二进制文件才能播放编码后的视频，因为目前全球没有任何视频播放器支持该编码格式的解码。

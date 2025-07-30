@@ -1,0 +1,82 @@
+---
+title: 降噪
+sidebar_position: 8
+---
+
+# 降噪
+
+:::danger 寻求帮助
+本节内容需要补充完善。如果您能提供帮助，请参阅我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+## 概述
+
+降噪是指从视频中去除随机噪声的过程。这些噪声可能来自胶片颗粒、信号干扰或单纯的弱光拍摄环境。无论何种原因产生的噪声，都会显著降低视频压缩效率——特别是当视频编解码器不支持胶片颗粒合成时。
+
+在[FFmpeg](../utilities/ffmpeg.mdx)中提供两种降噪滤镜：
+- [hqdn3d](#hqdn3d)
+- [nlmeans](#nlmeans)
+
+## hqdn3d
+
+hqdn3d是一种快速、高质量的三维降噪滤镜，可提升视频压缩率。适用于图像和视频处理。
+
+### 使用方法
+
+```shell
+ffmpeg -i input.mp4 -vf hqdn3d output.mp4
+```
+
+默认配置即可满足大多数使用场景。
+
+若仍存在明显噪点，可调整`luma_spatial`参数（其他参数默认由此派生）。该值越高降噪效果越强，默认值为`4`。
+
+```shell
+ffmpeg -i input.mp4 -vf hqdn3d=8 output.mp4
+# 等效于
+ffmpeg -i input.mp4 -vf hqdn3d=8:6:12:9 output.mp4
+```
+
+:::caution 注意
+过高的`luma_spatial`值可能导致重影和[色带](../introduction/video-artifacts.mdx#bandingcontouring)伪影。
+:::
+
+完整参数说明请参阅[官方文档](https://ffmpeg.org/ffmpeg-filters.html#hqdn3d-1)。
+
+## nlmeans
+
+nlmeans采用非局部均值算法进行降噪处理，通过比较像素点周围(r×r大小)的相似上下文区域来实现。
+
+该滤镜处理速度较慢且并行优化不足，仅建议用于重度噪点视频或需要极高降噪质量的场景。其他情况下使用[hqdn3d](#hqdn3d)效率更高。
+
+### 使用方法
+
+```bash
+ffmpeg -i input.mp4 -vf nlmeans output.mp4
+```
+
+默认配置适合多数场景：
+
+```bash
+ffmpeg -i input.mp4 -vf nlmeans=s=3.0:r=31:p=15 output.mp4
+```
+
+通过增大研究区域和匹配块尺寸实现强力降噪（适用于4K+超高清视频），但处理速度可能低至0.1帧/秒。
+
+```bash
+ffmpeg -i input.mp4 -vf nlmeans=s=1.0:r=5:p=3 output.mp4
+```
+
+该配置优先保证处理速度。
+
+### 参数说明
+
+- `s` - 降噪强度：默认`1.0`（最弱），理论最大值`30.0`（实际不建议超过`10.0`）
+- `r` - 研究区域尺寸：默认`15`，必须为0-99的奇数
+- `p` - 匹配块尺寸：默认`7`，必须为0-99的奇数
+
+完整参数说明请参阅[官方文档](https://ffmpeg.org/ffmpeg-filters.html#nlmeans-1)。
+
+# 注意事项
+- [hqdn3d](#hqdn3d)可能产生重影、[色带](../introduction/video-artifacts.mdx#bandingcontouring)和[块状](../introduction/video-artifacts.mdx#blocking)伪影
+- [nlmeans](#nlmeans)仅对高噪点视频可能产生轻微卡通化效果

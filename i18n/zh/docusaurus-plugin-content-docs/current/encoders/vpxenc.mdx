@@ -1,0 +1,123 @@
+---
+title: vpxenc
+sidebar_position: 8
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# vpxenc
+
+:::info 维护中
+本条目内容不完整，正在完善过程中。
+:::
+
+vpxenc是libvpx库中用于处理[VP9](../video/VP9.mdx)和[VP8](../video/VP8.mdx)视频编解码器的组件。它能够对两种格式进行编解码，其中vpxenc是多功能编码器。VP9在编码效率上与[HEVC](../video/HEVC.mdx)(h265)和[AVC](../video/AVC.mdx)(h264)竞争，并已被[AV1](../video/AV1.mdx)取代。VP8则与AVC竞争。
+
+默认情况下，vpxenc的竞争力未完全发挥，但即便正确使用，多数测试表明在[x265](../encoders/x265.mdx)等高效编码器下，h265仍能提供略优的比特率质量比。
+
+## FFmpeg集成
+
+vpxenc通过`libvpx`（用于**VP8**）和`libvpx-vp9`（用于**VP9**）在FFmpeg中可用。可通过运行`ffmpeg -h encoder=libvpx`或`ffmpeg -h encoder=libvpx-vp9`检查是否支持。
+注意：非FFmpeg标准的VP8/VP9参数**不被支持**。
+
+## 支持的色彩空间
+
+vpxenc支持以下色彩空间格式：
+
+| 格式            | 色度采样 | 支持位深       |
+|-----------------|:--------:|----------------|
+| YUV420P         | 4:2:0    | 8-bit          |
+| YUVA420P        | 4:2:0    | 8-bit（含Alpha通道）|
+| YUV422P         | 4:2:2    | 8-bit          |
+| YUV440P         | 4:4:0    | 8-bit          |
+| YUV444P         | 4:4:4    | 8-bit          |
+| GBRP            | -        | 8-bit          |
+| YUV420P10LE     | 4:2:0    | 10-bit         |
+| YUV422P10LE     | 4:2:2    | 10-bit         |
+| YUV440P10LE     | 4:4:0    | 10-bit         |
+| YUV444P10LE     | 4:4:4    | 10-bit         |
+| GBRP10LE        | -        | 10-bit         |
+| YUV420P12LE     | 4:2:0    | 12-bit         |
+| YUV422P12LE     | 4:2:2    | 12-bit         |
+| YUV440P12LE     | 4:4:0    | 12-bit         |
+| YUV444P12LE     | 4:4:4    | 12-bit         |
+| GBRP12LE        | -        | 12-bit         |
+
+## 二进制安装
+
+Windows版本可在Lastrosade的[网站](https://jeremylee.sh/bins/)获取，[此处](https://jeremylee.sh/bins/vpx.7z)下载。
+
+Linux和MacOS用户可通过包管理器搜索"vpxenc"或"libvpx"获取。
+
+## 编译指南（Windows/MacOS/Linux）
+
+Windows用户推荐使用[MSYS2](https://msys2.org/)中的MinGW-W64进行编译。
+
+需预先安装nasm/yasm及GNU构建工具（make、configure）。
+
+### 克隆代码
+```bash
+git clone https://chromium.googlesource.com/webm/libvpx
+cd libvpx
+mkdir libvpx_build && cd libvpx_build
+```
+
+### 配置参数
+由于默认配置不佳，需调整以下推荐参数：
+```bash
+../configure --cpu=native --extra-cxxflags="-ffat-lto-objects -flto" --extra-cflags="-ffat-lto-objects -flto" --as=auto --enable-vp9-highbitdepth --enable-libyuv --enable-webm-io --enable-vp9 --enable-runtime-cpu-detect --enable-internal-stats --enable-postproc --enable-vp9-postproc --enable-static --disable-shared --enable-vp9-temporal-denoising --disable-unit-tests --disable-docs --enable-multithread
+```
+
+参数详解：
+- `--cpu=native`：启用本地CPU优化
+- LTO相关参数：提升编码速度的编译优化
+- `--as=auto`：自动选择汇编器
+- `--enable-vp9-highbitdepth`：启用VP9高比特深度支持（≥10位）
+- `--enable-libyuv`：启用YUV4MPEG输入支持（关键）
+- `--enable-webm-io`：启用WebM容器支持
+- `--enable-vp9`：启用VP9编码
+- `--enable-runtime-cpu-detect`：运行时CPU检测
+- 统计/后处理相关参数：调试和质量优化
+- `--enable-static`：静态编译
+- `--enable-multithread`：启用多线程编码
+
+### 其他配置选项
+1. `--disable-vp8 --disable-vp9-decoder --disable-vp8-decoder`：禁用VP8编码和解码器编译
+2. `--enable-small`：优先减小二进制体积而非编码速度
+3. `--target=`：指定目标平台（详见完整列表）
+
+### 编译执行
+配置成功后运行：
+```bash
+make -j $(nproc)
+```
+生成的可执行文件为`vpxenc`。
+
+## VP8编码
+
+*内容待补充*
+
+## VP9编码优化
+
+vpxenc的默认VP9参数并非最优。截至2021年中，部分参数（TPL模型、lag-in-frames和auto-alt-ref帧）已变更（自libvpx 1.9.0/1.10.0起），使得部分设置仅在[FFmpeg](../utilities/ffmpeg.mdx)中有意义。
+
+### 关键参数说明
+- `--passes=2`：相比x264/x265的双通道模式更快
+- `--profile=2`：10/12位HDR支持必备
+- `--lag-in-frames=25`：等效于x264的lookahead，值越高效率越好（最高25）
+- `--cq-level=25`：8位1080p30建议值，动态内容需调整
+- `--cpu-used=3`：质量与速度平衡点（值越低质量越好）
+- `--row-mt=1`：始终启用行列多线程加速
+- `--bit-depth=10`：建议始终使用10位减少色带效应
+- `--tile-columns=1`：平铺列数（分辨率越高可设越大）
+- `--enable-tpl=1`：默认启用的时域分层模型
+
+### FFmpeg示例命令
+```bash
+ffmpeg -i input.mkv -c:v libvpx-vp9 -pix_fmt yuv420p10le -pass 1 -quality good -threads 4 -profile:v 2 -lag-in-frames 25 -crf 25 -b:v 0 -g 240 -cpu-used 3 -auto-alt-ref 6 -arnr-maxframes 7 -arnr-strength 4 -aq-mode 0 -tune-content default -tile-rows 0 -tile-columns 1 -enable-tpl 1 -row-mt 1 -f null -
+ffmpeg -i input.mkv -c:v libvpx-vp9 -pix_fmt yuv420p10le -pass 2 -quality good -threads 4 -profile:v 2 -lag-in-frames 25 -crf 25 -b:v 0 -g 240 -cpu-used 3 -auto-alt-ref 6 -arnr-maxframes 7 -arnr-strength 4 -aq-mode 0 -tune-content default -tile-rows 0 -tile-columns 1 -enable-tpl 1 -row-mt 1 output.mkv
+```
+也可直接向vpxenc传递.y4m原始流进行编码。
+
+*VP9章节基于BlueSwordM的创作，已获得书面授权*

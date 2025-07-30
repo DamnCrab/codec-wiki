@@ -1,0 +1,37 @@
+---
+title: tar
+sidebar_position: 8
+---
+
+# tar
+:::danger 需要帮助
+本节内容亟待完善。如果您能提供帮助，请查看我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+`tar`（磁带归档工具）是一种归档格式及实用程序，最初为第7版Unix系统于1977年开发。其原始用途是将文件合并为一个可存储在磁带上的文件。如今它主要用于将多个文件打包成"tarball"归档文件，该文件可通过任意通用数据压缩算法进行压缩。
+
+## 使用指南
+:::note
+本指南基于Linux下的GNU tar编写，但同样适用于BSD tar、macOS tar以及Windows PowerShell中的tar命令。
+:::
+
+### 创建tar归档文件
+```bash
+tar -cf {归档文件名} {待打包文件列表}
+```
+您可以使用`tar`对归档文件进行压缩，例如生成`.tar.gz`或`.tar.xz`文件。为此既可以使用`-z`、`-j`或`-J`等标志（分别对应[gzip](./gzip.mdx)、[bzip2](./bzip2.mdx)、[xz](../data/xz.mdx)），也可以使用`-a`（自动检测）参数，该参数会根据文件扩展名自动选择压缩算法，例如`archive.tar.xz`表示采用xz压缩的tarball。
+
+GNU tar支持的压缩算法包括：
+* gzip (.gz)
+* bzip2 (.bz)
+* xz (.xz)
+* lzip (.lz)
+* lzma (.lzma)
+* lzop (.lzo)
+* zstd (.zstd)
+
+### 解压tar归档文件
+```bash
+tar -xf {tarball文件名}.tar -C {解压目标目录}
+```
+tar能自动解压其支持的压缩格式（如`archive.tar.xz`），无需额外参数。

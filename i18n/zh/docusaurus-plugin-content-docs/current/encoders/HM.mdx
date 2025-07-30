@@ -1,0 +1,58 @@
+---
+title: HM
+sidebar_position: 16
+---
+
+# HM编码器
+
+:::caution 待审核
+本条目内容可能不完全准确，正在等待进一步审核以评估信息质量。
+:::
+
+HM是最初的[H.265](../video/HEVC.mdx)参考编码器，早于[x265](../encoders/x265.mdx)等替代方案。如今它与[JM](../encoders/JM.mdx)和[VTM](../encoders/VTM.mdx)等MPEG参考编码器一样，因使用复杂性和速度劣势而成为极少被采用的高度小众方案。x264比JM更高效。
+
+即使以极其缓慢的速度，HM也能产生比高度优化的x265更高质量的流。但这只是理论优势，因为HM无法通过场景检测自动放置关键帧，要实现这一点需要类似[Av1an](../utilities/av1an.mdx)的分块处理。对于帧数较少且无需考虑关键帧布局的视频，HM在实践中优于x265，但代价是速度大幅下降。HM不具备任何多线程能力，速度甚至远低于x265的placebo模式。
+
+## 安装指南
+
+以下构建指令适用于Linux和macOS系统：
+
+```bash
+git clone https://vcgit.hhi.fraunhofer.de/jvet/HM
+cd HM/
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+编译完成后可在克隆目录中找到`TAppEncoderStatic`或`TAppEncoder`二进制文件，可将其复制到`/usr/local/bin`进行编码操作。本条目不涉及该参考编解码器实现的解码及其他功能。
+
+## 使用说明
+
+示例命令：`TAppEncoderStatic -i input.yuv -b out.265 -c ~/HM/cfg/encoder_randomaccess_main10.cfg -wdt 1280 -hgt 720 -fr 50 -f 500 -q 27 -xPS 0`
+
+使用HM编码时请确保仅输入YUV格式文件。各参数含义如下：
+
+- `-i input.yuv -b out.265`
+
+指定原始YUV输入文件和输出的原始h265码流。建议使用[mp4box](../utilities/mp4box.mdx)而非[FFmpeg](../utilities/ffmpeg.mdx)进行MP4容器封装。
+
+- `-c [配置文件路径]`
+
+指定HM配置文件路径，避免手动设置大量参数。
+
+- `-wdt 1280 -hgt 720`
+
+设置输入输出画面的宽度和高度。
+
+- `-fr 50 -f 500`
+
+设置帧率(FPS)和编码帧数。本例将编码500帧50fps的视频。
+
+- `-q 27`
+
+设置编码器的质量目标值。
+
+- `-xPS 0`
+
+功能未知。如有知晓者欢迎补充说明！

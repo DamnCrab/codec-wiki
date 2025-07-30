@@ -1,0 +1,131 @@
+---
+title: SVT-AV1
+sidebar_position: 5
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# SVT-AV1
+
+:::info 维护中
+本条目内容尚不完整，正在完善过程中。
+:::
+
+SVT-AV1（AV1可扩展视频技术）是一款符合AV1标准的软件编解码器库。由英特尔与Netflix联合开发，主要采用C语言编写，部分代码使用C++和汇编语言实现。作为英特尔"[可扩展视频技术](https://www.intel.com/content/www/us/en/developer/articles/technical/scalable-video-technology.html)"项目系列的一部分，该编码器被称为AV1的"生产级"编码器（而[aomenc](../encoders/aomenc.mdx)是AV1的"参考级"编码器），以其优异的并行处理能力、高编码效率和活跃的开发生态著称。相比aomenc或[rav1e](../encoders/rav1e.mdx)，SVT-AV1能更有效地利用多核CPU，因此虽然[Av1an](../utilities/av1an.mdx)等工具在场景检测方面仍有帮助，但对并行化的需求相对较低。
+
+## FFmpeg集成
+
+通过`libsvtav1`可在FFmpeg中使用SVT-AV1，运行`ffmpeg -h encoder=libsvtav1`可检查是否可用。非FFmpeg标准的SVT-AV1参数可通过`-svtav1-params`传递。
+
+## 支持的色彩空间
+
+SVT-AV1支持以下色彩空间格式：
+
+| 格式           | 色度抽样 | 支持位深       |
+|----------------|:--------:|----------------|
+| YUV420P        | 4:2:0    | 8-bit          |
+| YUV420P10LE    | 4:2:0    | 10-bit         |
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        *x86_64架构Linux用户可通过[rAV1ator CLI](../utilities/rav1ator-cli.mdx)获取预编译的AVX2优化版SVT-AV1-PSY二进制文件。但推荐从源码构建以获得最佳性能。*
+
+        首先克隆代码仓库并进入构建目录：
+
+        ```bash title="克隆主线SVT-AV1"
+        git clone https://gitlab.com/AOMediaCodec/SVT-AV1/
+        git reset --hard bbcff785881b320f7e1b1f77a2f5ed025f8bfd75 # 回退到2.1.0版本
+        cd SVT-AV1/Build/linux
+        ```
+
+        ```bash title="克隆SVT-AV1-PSY"
+        git clone https://github.com/gianni-rosato/svt-av1-psy
+        cd SVT-AV1/Build/linux
+        ```
+
+        执行构建脚本（需CMake 3.16+及GCC/Clang，推荐使用clang）：
+
+        ```bash title="构建正式版"
+        ./build.sh release
+        ```
+
+        ```bash title="使用clang静态编译编码器并启用LTO优化"
+        ./build.sh jobs=8 all cc=clang cxx=clang++ no-dec enable-lto static native
+        ```
+
+        编译产物位于`Bin/Release`目录，包含SvtAv1EncApp。添加`no-dec`参数可跳过解码器编译。
+
+        若需极致性能，可进行PGO（性能导向优化）编译：
+
+        ```bash title="PGO优化编译"
+        git clone https://gitlab.com/AOMediaCodec/SVT-AV1/
+        cd SVT-AV1/Build/linux
+        ./build.sh cc=gcc cxx=g++ enable-lto enable-pgo static native jobs=$(nproc) pgo-dir=/dev/shm pgo-videos=/dev/shm release
+        ```
+
+        自定义训练参数可参考：
+
+        ```bash
+        git clone https://gitlab.com/AOMediaCodec/SVT-AV1/
+        cd SVT-AV1/Build/linux
+        ./build.sh cc=gcc cxx=g++ enable-lto enable-pgo static native jobs=$(nproc) pgo-dir=/dev/shm pgo-compile-gen release
+        ../../Bin/Release/SvtAv1EncApp # 使用自定义参数多次运行以收集性能数据
+        ./build.sh cc=gcc cxx=g++ enable-lto enable-pgo static native jobs=$(nproc) pgo-dir=/dev/shm pgo-compile-use release
+        ```
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        待完善。欢迎参与贡献，详见[贡献指南](../contribution-guide.mdx)。
+    </TabItem>
+</Tabs>
+
+## 编码实践
+
+### 优势特性
+
+SVT-AV1最突出的优势在于其并行化能力，显著优于其他AV1编码器。其并行技术不依赖分块处理(tiling)，在保持与aomenc相当的编码效率同时，处理1080p视频时可充分利用16个CPU核心。虽然主流分支在感知质量上稍逊于精心调校的aomenc社区分支，但SVT-AV1-PSY版本的推出已显著缩小了这一差距。
+
+### 当前局限
+
+SVT-AV1在x86架构表现最佳，虽然自1.8.0版本引入的[ARM NEON汇编优化](https://gitlab.com/AOMediaCodec/SVT-AV1/-/commit/ba13fac241f1b54954935f2cb200efc07f3de13a)持续改进，但在ARM平台仍表现欠佳。功能支持方面仅限4:2:0色度抽样和10位色深，不支持12位色和场景切换检测（也无相关开发计划），最小输出分辨率限制为64x64。
+
+### 编码优化
+
+除编译优化外，还可调整`SvtAv1EncApp`参数（以下建议不适用于SVT-AV1-PSY）：
+
+- `--film-grain`与`--film-grain-denoise`  
+通过`--film-grain`可添加胶片颗粒（推荐实拍内容设为8，手绘动画设为4），`--film-grain-denoise`则先降噪再添加颗粒，但可能损失细节。
+
+- `--input-depth 10`  
+即使源为8位也建议输出10位码流以获得更优编码效率。
+
+- `--tune 2`  
+三种调优模式：Tune 1针对[PSNR](../metrics/PSNR.mdx)[率失真优化](../introduction/psychovisual.mdx)，Tune 2针对[SSIM](../metrics/SSIM.mdx)优化，Tune 0为视觉质量(VQ)模式。PSNR模式因与人类视觉感知相关性低已较少使用，VQ模式较稳妥，但SSIM模式（SVT-AV1-PSY的Tune 3）能提供更好的视觉保真度。
+
+- `--enable-qm 1`  
+启用量化矩阵（默认关闭），可在保持质量的同时提升编码速度。
+
+- `--qm-min 0`  
+将量化矩阵最小平坦度从默认8降至0（重度噪点场景除外），最大平坦度保持默认15。
+
+- `--keyint [FPS*10]`  
+类似[vpxenc](../encoders/vpxenc.mdx)的`--kf-max-dist`，设置关键帧间隔。使用Av1an时应设为-1以禁用内置关键帧插入。
+
+- `--irefresh-type 2`  
+选择闭合GOP（当前推荐）或开放GOP（支持不完善），详见[技术说明](https://ottverse.com/closed-gop-open-gop-idr/)。
+
+- `--preset X`  
+提供14级预设（-1至13）：-1为研究级超慢速，13为超快速低效模式，常规推荐2-8（非实时场景），9-12适用于1080p及以下的实时编码。
+
+- `--crf X`  
+恒定质量模式（CRF）能提供最佳视觉保真度，VBR/CBR因码率控制机制会损失效率。
+
+## 社区分支
+
+目前最值得关注的社区分支是[SVT-AV1-PSY](./SVT-AV1-PSY.mdx)。
+
+### SVT-AV1-PSY
+
+该分支专注于提升感知质量和用户体验，目标是通过AV1实现最佳视觉编码效果，在速度和质量上超越[aomenc](./aomenc.mdx#社区分支)的各类优化版本。其新增特性与默认参数优化详见[项目说明](https://github.com/gianni-rosato/svt-av1-psy/blob/master/README.md#feature-additions)。

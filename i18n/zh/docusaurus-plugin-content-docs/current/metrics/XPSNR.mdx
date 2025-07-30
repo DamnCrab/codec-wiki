@@ -1,0 +1,61 @@
+---
+title: XPSNR
+sidebar_position: 1
+---
+
+# XPSNR
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+XPSNR是一种基于峰值信噪比(PSNR)概念的全参考视频质量评估失真测量算法，经过调整能更好地反映人类视觉系统特性。
+
+根据其与主观评价结果的相关性以及出色的运算速度，XPSNR被认为是一种极具公信力的视觉质量评估指标。与[SSIMULACRA2](./SSIMULACRA2.mdx)这类图像优先的指标不同，XPSNR是专为视频设计的评估指标，会利用时域信息进行计算。
+
+Fraunhofer HHI提供的参考实现是[FFmpeg 7.0插件](https://github.com/fraunhoferhhi/xpsnr)，另有一个[社区开发的独立实现版本](https://github.com/gianni-rosato/sxpsnr)。关于算法原理和设计细节，可参阅[相关科研论文](https://www.itu.int/pub/S-JOURNAL-ICTS.V3I1-2020-8)。
+
+## 安装指南
+
+XPSNR以FFmpeg 7.0插件形式提供，安装流程如下：
+
+1. 下载FFmpeg 7.0源码：
+```bash
+git clone -b release/7.0 https://git.ffmpeg.org/ffmpeg.git ffmpeg
+```
+
+2. 下载XPSNR插件代码：
+```bash
+git clone https://github.com/fraunhoferhhi/xpsnr
+```
+
+3. 将插件文件复制到FFmpeg目录：
+```bash
+cp xpsnr/libavfilter/* ffmpeg/libavfilter/
+```
+
+4. 配置并编译FFmpeg：
+```bash
+cd ffmpeg
+./configure ...
+make -j $(nproc)
+```
+
+## 使用方法
+
+XPSNR作为FFmpeg滤镜使用，操作方式与内置PSNR插件类似：
+```bash
+./ffmpeg -i ref.mkv -i test.mkv -lavfi xpsnr="stats_file=xpsnr.log" -f null -
+```
+
+## 注意事项
+
+* 参考实现采用FFmpeg插件形式而非独立可执行文件，这对某些工作流程不够便利。目前已有开发者尝试构建[独立版XPSNR工具](https://github.com/gianni-rosato/sxpsnr)，但尚未广泛使用。
+* XPSNR采用类PSNR的评分系统：0..inf的对数尺度。相比其他指标（如[SSIMULACRA2](../metrics/SSIMULACRA2.mdx)或[VMAF](../metrics/VMAF.mdx)）更难以解读，且判定优质内容的阈值取决于具体视频内容。（初步测试显示XPSNR分数超过42.00时可视为视觉无损）
+* XPSNR会分别计算视频的亮度分量(Y)和两个色度分量(U,V)的分数，实际输出3个评分值。虽然开发者建议采用三者中的最小值作为"最终分数"（因其与人类观感相关性更强），但社区部分成员倾向于使用加权公式：`(4 * XPSNR_Y + XPSNR_U + XPSNR_V) / 6`。
+
+## 与SSIMULACRA2对比
+
+XPSNR相对于SSIMULACRA2的主要优势在于计算速度显著更快。对于1080p 24fps视频可实现实时计算，更便于快速比对不同编码版本。
+
+在视觉评估能力方面，XPSNR和SSIMULACRA2展现出良好的互补性，针对不同类型的视频内容各有优劣。条件允许时，同时使用两种指标能显著提升视频质量评估效果。

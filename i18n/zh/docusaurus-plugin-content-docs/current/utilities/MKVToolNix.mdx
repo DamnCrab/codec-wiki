@@ -1,0 +1,33 @@
+---
+title: MKVToolNix
+sidebar_position: 4
+---
+
+# MKVToolNix
+
+<picture>
+    <source srcset="https://raw.githubusercontent.com/av1-community-contributors/images/main/mkvtoolnix-gui-workload.avif" type="image/avif" />
+    <img src="https://raw.githubusercontent.com/av1-community-contributors/images/main/mkvtoolnix-gui-workload.webp" alt="MKVToolNix工作界面" />
+</picture>
+<br/><br/>
+
+MKVToolNix是一款免费开源的GUI前端工具集（包含mkvmerge、mkvinfo、mkvpropedit、mkvextract），用于在Linux、其他类Unix系统及Windows平台上创建、修改和检查Matroska格式文件。
+
+该软件基于Qt框架并使用C++编写。
+
+## 安装指南
+
+开发者Moritz Bunkus为各主流桌面操作系统提供了完善的下载支持：
+- Windows和Mac用户：访问[MKVToolNix官网](https://mkvtoolnix.download/downloads.html)
+- Linux用户：可通过[Flatpak安装](https://flathub.org/apps/org.bunkus.mkvtoolnix-gui)或使用系统包管理器
+
+## 使用方法
+
+将媒体文件拖放至应用界面（或使用"添加源文件"选项），可进行修改、重新封装、解封装、添加/删除音视频流等操作，设置输出路径后点击"开始混流"即可生成新文件。
+
+## 实用技巧
+
+1. 支持直接导入未加密的BDMV（``index.bdmv``）或蓝光播放列表文件，软件会提示选择需要导入的流
+2. 通过输出>杂项>"创建WebM兼容文件"可生成符合WebM标准的输出
+3. 在输出>分割选项中提供多种视频分割方式，最大优势在于：相比FFmpeg不会产生冻结帧，且无需重新编码
+4. 通过"头部编辑器"可直接编辑元数据（功能有限）而无需重新封装

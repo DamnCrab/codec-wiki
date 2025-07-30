@@ -1,0 +1,204 @@
+---
+title: VMAF
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# VMAF
+
+:::info 维护中
+本文档内容尚不完整，正在补充完善中。
+:::
+
+VMAF（Video Multimethod Assessment Fusion）是由Netflix主导开发的全参考视频质量评估算法。
+
+## 安装方法
+
+VMAF作为[libvmaf](https://github.com/Netflix/vmaf)的一部分提供，常见使用方式有两种：
+* 作为[FFmpeg](../utilities/ffmpeg.mdx)滤镜
+* 作为独立可执行文件
+
+以下说明针对Linux和macOS系统编写。Windows用户可通过[WSL子系统](https://docs.microsoft.com/en-us/windows/wsl/install)执行相同操作。
+
+<Tabs>
+    <TabItem value="bin" label="独立可执行文件">
+
+        源码编译步骤如下：
+
+        0. 通过包管理器安装依赖项：`nasm`、`ninja-build`、`doxygen`和`xxd`
+
+        1. 克隆仓库并进入目录
+        ```bash title="克隆仓库"
+        git clone https://github.com/Netflix/vmaf/
+        cd vmaf/
+        ```
+
+        2. 使用meson和ninja编译
+        ```bash
+        meson setup libvmaf libvmaf/build --buildtype release -Denable_float=true
+        sudo ninja -vC libvmaf/build install
+        ```
+
+        现在可通过以下命令运行VMAF：
+        ```bash
+        vmaf --help
+        ```
+
+        若不想从源码编译，可从VMAF的[GitHub发布页](https://github.com/Netflix/vmaf/releases)下载预编译版本。
+
+        使用示例：
+        ```bash
+        /path/to/vmaf --reference refrence.y4m --distorted distorted.y4m
+        ```
+
+        **提示：** 如果VMAF二进制文件没有执行权限，需要运行`chmod +x /path/to/vmaf`
+
+        命令行参数说明详见[官方文档](https://github.com/Netflix/vmaf/blob/master/libvmaf/tools/README.md)
+
+        该方式的缺点是必须使用.yuv或.y4m文件，可通过命名管道解决：
+        使用FFmpeg解码的简单示例：
+
+        ```bash
+        # 创建管道
+        mkfifo ref.pipe
+        mkfido dist.pipe
+
+        # 在不同终端分别执行（顺序无关）
+        ffmpeg -v error -i ref.mkv -strict -1 -f yuv4mpegpipe - > ref.pipe
+        ffmpeg -v error -i dist.mkv -strict -1 -f yuv4mpegpipe - > dist.pipe
+
+        # 启动上述两个FFmpeg进程后
+        # 在新终端运行VMAF
+        /path/to/vmaf --reference ref.pipe --distorted dist.pipe
+
+        # 使用后删除管道
+        rm ref.pipe dist.pipe
+        ```
+
+        优势：
+        * 无需支持`--enable-libvmaf`的FFmpeg编译版本
+        * 可灵活使用VMAF特有参数如`--aom_ctc`
+
+        劣势：
+        * 没有封装脚本时使用较麻烦
+
+    </TabItem>
+    <TabItem value="ffmpegfilter" label="FFmpeg滤镜">
+
+        检查是否已安装VMAF支持：运行`ffmpeg -help`查看输出中是否包含`--enable-libvmaf`标志。若未找到，需重新编译FFmpeg或下载预编译版本。
+
+        *引自[VMAF GitHub仓库](https://github.com/Netflix/vmaf/blob/master/resource/doc/ffmpeg.md):*
+        ## 在FFmpeg中使用VMAF
+
+        安装`libvmaf`后，通过以下命令配置编译FFmpeg：
+
+        ```shell script
+        ./configure --enable-libvmaf
+        make -j4
+        make install
+        ```
+
+        FFmpeg+libvmaf的强大之处在于可构建复杂滤镜链，直接计算不同编码格式和分辨率视频的VMAF值。最佳实践参考[技术博客](https://medium.com/netflix-techblog/vmaf-the-journey-continues-44b51ee9ed12)。
+
+        使用示例（需从[vmaf_resource](https://github.com/Netflix/vmaf_resource/tree/master/python/test/resource)下载测试视频）：
+
+        计算两个YUV文件的VMAF值：
+        ```shell script
+        ffmpeg -video_size 576x324 -r 24 -pixel_format yuv420p -i src01_hrc00_576x324.yuv \
+            -video_size 576x324 -r 24 -pixel_format yuv420p -i src01_hrc01_576x324.yuv \
+            -lavfi "[0:v]setpts=PTS-STARTPTS[reference]; \
+                    [1:v]setpts=PTS-STARTPTS[distorted]; \
+                    [distorted][reference]libvmaf=log_fmt=xml:log_path=/dev/stdout:model_path={your_vmaf_dir}/model/vmaf_v0.6.1.json:n_threads=4" \
+            -f null -
+        ```
+
+        预期输出：
+        ```shell script
+        [libvmaf @ 0x7fcfa3403980] VMAF score: 76.668905
+        ```
+
+        更复杂的MP4文件示例（包含分辨率转换）：
+        ```shell script
+        ffmpeg \
+            -r 24 -i Seeking_30_480_1050.mp4 \
+            -r 24 -i Seeking_10_288_375.mp4 \
+            -lavfi "[0:v]setpts=PTS-STARTPTS[reference]; \
+                    [1:v]scale=720:480:flags=bicubic,setpts=PTS-STARTPTS[distorted]; \
+                    [distorted][reference]libvmaf=log_fmt=xml:log_path=/dev/stdout:model_path={your_vmaf_dir}/model/vmaf_v0.6.1.json:n_threads=4" \
+            -f null -
+        ```
+
+        预期输出：
+        ```shell script
+        [libvmaf @ 0x7fb5b672bc00] VMAF score: 51.017497
+        ```
+
+        更多信息参考：[FFmpeg的libvmaf指南](https://ffmpeg.org/ffmpeg-filters.html#libvmaf)、[FFmpeg滤镜指南](https://trac.ffmpeg.org/wiki/FilteringGuide)和[缩放指南](https://trac.ffmpeg.org/wiki/Scaling)。
+
+        ### Windows系统模型路径注意事项
+
+        Windows系统需显式指定`model_path`参数，路径格式处理需特别注意：
+
+        1. 将反斜杠`\`转换为正斜杠`/`（`D:/mypath/vmaf_v0.6.1.json`）
+        2. 用反斜杠转义冒号`:`（`D\:/mypath/vmaf_v0.6.1.json`）
+        3. 对转义符再次转义（`D\\:/mypath/vmaf_v0.6.1.json`）
+        4. 根据运行环境调整：
+
+            PowerShell/CMD示例：
+            ```powershell
+            ./ffmpeg.exe -i dist.y4m -i ref.y4m \
+                -lavfi libvmaf=model_path="D\\:/mypath/vmaf_v0.6.1.json" \
+                -f null -
+            ```
+
+            :::info 路径引号
+            注：此处引号仅作示例，实际使用时引号可有可无
+            :::
+
+            MSYS2 bash环境需额外处理：
+            ```bash
+            MSYS2_ARG_CONV_EXCL="*" \
+                ./ffmpeg.exe -i dist.y4m -i ref.y4m -lavfi \
+                libvmaf=model_path="D\\\:/mypath/vmaf_v0.6.1.json" -f null -
+            ```
+            :::info 引号处理
+            注：在bash中必须使用引号，否则需要四个反斜杠
+            :::
+
+            :::note 单引号方案
+            使用单引号的等效方案：
+            ```bash
+            MSYS2_ARG_CONV_EXCL="*" \
+                ./ffmpeg.exe -i dist.y4m -i ref.y4m -lavfi \
+                libvmaf=model_path='D\\:/mypath/vmaf_v0.6.1.json' -f null -
+            ```
+            :::
+    </TabItem>
+</Tabs>
+
+## 评分标准
+VMAF分数范围0-100线性分布，100代表完美质量，0代表无法识别内容。更多解读参考[Netflix技术博客](https://netflixtechblog.com/vmaf-the-journey-continues-44b51ee9ed12)。在低/中码率场景下与主观评分(MOS)高度吻合，验证数据参见[视频质量指标评测](https://videoprocessing.ai/benchmarks/video-quality-metrics_both.html)。
+
+## 已知局限性
+
+* 对AV1/VVC等新编解码器的新型失真（如2024年1月最新的v0.6.2模型）识别不足，高动态场景评分可能偏差较大
+* 不适用于"透明"质量级别（普通观众难以察觉的画质差异）
+* 合成颗粒会干扰评分（此问题非VMAF独有）
+:::tip 使用FFmpeg时可通过以下方法禁用合成颗粒
+在FFmpeg命令的`-i`参数前添加`-filmgrain 0`（仅限dav1d解码器）
+TODO: 后续将替换为export_side_data方案
+:::
+* 截至2024年1月，不支持HDR内容（输入未经色调映射的PQ信号会导致评分不准）
+* 与SSIMULACRA2不同，VMAF侧重观赏体验而非绝对保真度
+* 由于机器学习特性，同一视频自比较时不一定得100分
+
+### 与SSIMULACRA2对比
+
+相比SSIMULACRA2的核心优势在于时域信息处理：VMAF会对高动态帧赋予更高权重，而SSIMULACRA2作为图像指标只能逐帧比较。此外VMAF在速度和易用性方面也更优。
+
+# 扩展资源
+
+- [GitHub文档](https://github.com/Netflix/vmaf/tree/master/resource/doc)
+- [Netflix技术博客](https://netflixtechblog.com/vmaf-the-journey-continues-44b51ee9ed12)

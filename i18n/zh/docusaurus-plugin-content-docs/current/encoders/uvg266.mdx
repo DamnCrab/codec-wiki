@@ -1,0 +1,74 @@
+---
+title: uvg266
+sidebar_position: 13
+---
+
+# uvg266
+
+[uvg266](https://github.com/ultravideo/uvg266/) 是一款开源的 [H.266/VVC](/docs/video/VVC) 编解码器软件编码器。由 [Ultra Video Group](https://ultravideo.fi/) 开发，采用C语言编写并以BSD 3条款许可证发布。
+该编码器基于其开源 [HEVC](/docs/video/HEVC) 编码方案 [Kvazaar](/docs/encoders/Kvazaar) 构建。
+
+## 安装指南
+
+### Arch Linux
+
+uvg266 已收录至 Arch 用户仓库(AUR)，包名为 `uvg266` 和 `uvg266-git`。
+
+### 编译安装
+Ultra Video Group 不提供预编译的编码器二进制文件，因此需要自行编译。
+
+Windows 用户建议使用 [MSYS2](https://msys2.org/) 中的 MinGW-W64 进行编译。
+
+:::caution
+编译需要 GNU Make 和 CMake 工具链
+:::
+
+:::tip
+以下编译流程适用于所有主流操作系统。使用 Clang 替代 GCC 同样有效。
+
+在 CMake 中添加 `-DCMAKE_CXX_FLAGS="-flto -O3 -march=native" -DCMAKE_C_FLAGS="-flto -O3 -march=native -pipe -fno-plt" -DCMAKE_C_FLAGS_INIT="-flto=8 -static"` 可获得更佳性能。
+:::
+
+```bash
+git clone https://github.com/ultravideo/uvg266.git
+cd uvg266/build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=0
+make -j 8
+```
+
+编译生成的可执行文件位于 `build` 目录，或在 Linux 系统执行 `make install` 进行安装（可能需要管理员权限）。
+
+### 10-bit 支持
+
+需在 CMake 的 `-DCMAKE_C_FLAGS` 选项中添加 `-DUVG_BIT_DEPTH=10` 来启用10位色深视频编码。
+
+例如：
+```bash
+-DCMAKE_C_FLAGS="-DUVG_BIT_DEPTH=10"
+```
+启用本地化优化：
+```bash
+-DCMAKE_C_FLAGS="-flto -O3 -march=native -pipe -fno-plt -DUVG_BIT_DEPTH=10"
+```
+
+:::warning
+uvg266 的10位编码效率显著降低，因开发者仅针对8位进行了SIMD优化，且可能存在较多缺陷。
+:::
+
+## 使用示例
+
+```bash title="Y4M格式输入，QP值20，输出原始266码流"
+uvg266 -i input.y4m --input-file-format y4m --qp 20 -o output.266
+```
+
+```bash title="慢速预设，CRF值20，Y4M输入"
+uvg266 -i input.y4m --input-file-format y4m --qp 20 --preset slow -o output.266
+```
+
+```bash title="FFmpeg管道传输"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | uvg266 -i - --input-file-format y4m --qp 20 --preset slow -o output.266
+```
+
+## 故障排除
+
+1. `Could not find a strategy for crc32c_8x8!` - 该错误表明编码器未能针对当前CPU指令集初始化块分区策略，导致无法使用编码器或处理特定视频文件。

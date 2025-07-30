@@ -1,0 +1,20 @@
+---
+title: AVS3
+sidebar_position: 7
+---
+
+# AVS3 视频编码标准
+
+:::danger 招募贡献者
+本节内容亟待完善。如果您能提供帮助，请查阅我们的[贡献指南](../contribution-guide.mdx)参与贡献！
+:::
+
+AVS3是AVS系列最新的编解码器，旨在实现相较于AVS2和[HEVC](../video/HEVC.mdx)显著的编码效率提升。该标准分为两个阶段制定，基础档次（Main Profile）于2019年定稿，增强档次（High Profile）于2021年完成。
+
+相比前代AVS标准，AVS3采用更灵活的编码树结构和块划分方案，并引入新型DCT-VII和DST-VII变换。北京大学、鹏城实验室和华为等机构共同主导了AVS3的研发工作。
+
+2022年，AVS3与[VVC](../video/VVC.mdx)共同被纳入全球DVB标准体系。截至2024年，联发科、海思等厂商已推出多款支持AVS3的硬件解码器。随着DVB工具箱的集成支持，预计未来将有更多硬件设备支持AVS3解码。
+
+北京大学深圳研究生院开源的[uavs3](https://github.com/uavs3)项目提供了AVS3-P2的高性能软件编解码方案，其代码已针对x86和arm架构进行深度优化。自FFmpeg 6.0起，已通过集成[uavs3d](https://github.com/uavs3/uavs3d)解码器实现对AVS3的解码支持。
+
+英特尔与博雅合作开发的[SVT-AVS3](https://www.intel.com/content/www/us/en/developer/articles/technical/scalable-video-technology.html)编码器目前尚未公开。当前唯一面向公众的开源编码器实现为[uavs3e](/docs/encoders/uavs3e)。

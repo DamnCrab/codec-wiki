@@ -1,0 +1,124 @@
+---
+title: x264
+sidebar_position: 1
+---
+
+# x264
+
+x264是由VideoLAN开发的一款H.264/AVC视频编码软件库及命令行工具，其开发团队正是打造了广受欢迎的VLC媒体播放器的原班人马。该软件采用C语言和汇编编写，遵循GNU GPL协议发布，经过近二十年的发展与线程优化，现已成为速度最快的软件视频编码器，同时保持着极高的流行度。
+
+x264具有卓越的细节保留能力，特别适合需要高保真度的视频内容。
+
+## FFmpeg集成
+
+通过`libx264`即可在FFmpeg中使用x264，执行`ffmpeg -h encoder=libx264`可检查是否已安装。如需使用非FFmpeg标准的x264参数，可通过`-x264-params`传递。
+
+## 支持的色彩空间
+
+x264支持以下色彩空间格式：
+
+| 格式            | 色度抽样        | 支持位深         |
+|-----------------|:--------------:|------------------|
+| YUV420P         | 4:2:0          | 8-bit            |
+| YUVJ420P        | 4:2:0          | 8-bit (全范围)   |
+| YUV422P         | 4:2:2          | 8-bit            |
+| YUVJ422P        | 4:2:2          | 8-bit (全范围)   |
+| YUV444P         | 4:4:4          | 8-bit            |
+| YUVJ444P        | 4:4:4          | 8-bit (全范围)   |
+| NV12            | 半平面          | 8-bit            |
+| NV16            | 半平面          | 8-bit            |
+| NV21            | 半平面          | 8-bit (反转)     |
+| GRAY8           | -              | 8-bit            |
+| YUV420P10LE     | 4:2:0          | 10-bit           |
+| YUV422P10LE     | 4:2:2          | 10-bit           |
+| YUV444P10LE     | 4:4:4          | 10-bit           |
+| GBRP10LE        | -              | 10-bit           |
+| GRAY10LE        | -              | 10-bit           |
+
+## 安装指南
+
+**推荐预编译版本：**
+
+- https://code.videolan.org/videolan/x264
+
+选择对应操作系统的版本，或通过系统包管理器安装。
+
+## 使用示例
+
+x264以简洁直观的参数设置著称：
+
+```bash title="CRF 20的Y4M原始输入转264原始码流"
+x264 --crf 20 -o output.264 input.y4m
+```
+
+```bash title="慢速预设+CRF 20处理Y4M输入"
+x264 --preset slow --crf 20 -o output.264 input.y4m
+```
+
+以下示例通过[FFmpeg](../utilities/ffmpeg.mdx)向x264传输视频流：
+
+```bash title="FFmpeg管道传输"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | x264 --preset slow --crf 20 --demux y4m - -o output.264
+```
+
+```bash title="FFmpeg管道传输输出MKV"
+ffmpeg -v error -i input.mkv -f yuv4mpegpipe -strict -1 - | x264 --preset slow --crf 20 --demux y4m - -o output.mkv
+```
+
+:::note 输出容器
+x264支持输出``264``、MKV、FLV（Flash视频）及MP4（需编译时启用GPAC或L-SMASH支持）。关于容器的详细信息，请参阅[术语表-容器](../introduction/terminology.mdx#container)章节。
+:::
+
+:::caution 注意事项
+x264使用Haali Matroska混合器生成MKV时可能存在定位问题，建议通过FFmpeg或mkvmerge/MKVToolNix重新封装。
+:::
+
+## 优化建议
+
+x264设计理念强调"开箱即用"，因此高级参数调整空间有限。基本原则是：在可接受的时间内选择最慢的编码速度。
+
+### 预设选择
+
+``--preset veryslow``
+
+提升比特率效率最直接的方法是允许编码器投入更多计算资源。此预设速度较慢，但``placebo``预设更为极致。
+
+### 线程控制
+
+``--threads X``
+
+默认线程数为CPU核心数的1.5倍，除非需要限制资源占用，否则无需调整。x264的线程调度效率极高，通常可充分榨干消费级CPU性能。
+
+### 开放图像组
+
+``--open-gop``
+
+启用开放式GOP（图像组），允许GOP间[相互引用](https://ottverse.com/closed-gop-open-gop-idr/)，在几乎不损失速度的前提下提升压缩率。该功能默认关闭的原因至今成谜。
+
+### 自适应量化模式
+
+``--aq-mode 3``
+
+简言之，该模式会优先分配码率给暗部区域，显著改善暗场画质，且几乎不影响编码速度。
+
+### 参考帧设置
+
+``--bframes 8 --ref 12``
+
+这两个参数控制用于压缩的参考帧数量（最大值16），数值越大压缩效果越好，但计算耗时也呈指数增长。
+
+### 宏块树优化
+
+``--no-mbtree``
+
+禁用宏块树码率控制技术。该技术本意是通过动态分配码率（给静态画面更多码率，动态画面较少码率）来优化观感，但大量用户反馈其对胶片颗粒等纹理的处理反而会降低画质。
+
+### 无损编码方案
+
+x264支持无损编码模式，可与[FFV1](../video/FFV1.mdx)和[UT Video](../video/utvideo.mdx)等专业无损编码器竞争。使用`--qp 0`即可启用无损模式，更慢的预设能进一步减小文件体积。
+
+当存储空间不是首要考量时（如制作中间无损素材用于后续有损编码），x264能提供当前最快的无损编码/解码速度。追求极致性能可选择`--preset ultrafast`配合`--tune fastdecode`，但`--preset superfast`在仅增加20-30%体积的前提下仍保持惊人速度��可能是更理想的选择。
+
+:::info 为什么用QP 0而非CRF 0？
+CRF通过自动调整量化参数实现目标画质，而QP（量化参数）提供完全控制权。无损编码必须使用QP模式，但对于有损编码，CRF能实现更优的视觉质量/码率比。
+:::

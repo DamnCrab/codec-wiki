@@ -1,0 +1,38 @@
+---
+title: NMKODER
+sidebar_position: 7
+---
+
+# NMKODER
+
+<picture>
+    <source srcset="/img/nmkoder.avif" type="image/avif" />
+    <img src="/img/nmkoder.webp" alt="NMKODER 界面" />
+</picture>
+<br/><br/>
+
+[NMKODER](https://github.com/n00mkrad/nmkoder) 是由 [N00MKRAD](https://github.com/n00mkrad) 开发的免费开源 **仅限Windows** 图形界面软件。该软件基于FFmpeg、FFprobe和Av1an构建，用于视频编码、混流及分析操作（如视频拼接、指标计算和比特率图表绘制）。不过大多数用户主要使用其[Av1an](/docs/utilities/av1an)功能模块。
+
+本软件采用C#语言编写，基于WinForms框架开发。
+
+:::danger 停止维护
+NMKODER已多年未更新，不建议继续使用。但您可以通过手动替换二进制文件（如aomenc.exe等）来"升级"程序。
+:::
+
+## 安装指南
+
+从GitHub[发布页](https://github.com/n00mkrad/nmkoder/releases)下载7z压缩包，解压至任意目录后运行其中的exe文件即可。
+
+本软件为绿色便携版，可直接复制文件夹共享给其他用户使用。
+
+## 使用说明
+
+NMKODER操作界面直观，采用多标签页设计实现不同功能。左侧设有拖放文件区域。
+
+- "文件列表"显示已导入文件
+- "轨道列表"管理音视频轨道
+- "快速转换"标签页提供FFmpeg转码功能
+- "AV1AN"模块即Av1an功能界面
+- "实用工具"包含色彩空间/HDR元数据转移、画质指标计算等辅助功能
+
+完成配置后，点击"开始"按钮即可启动编码任务。

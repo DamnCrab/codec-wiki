@@ -1,0 +1,59 @@
+---
+title: av1an命令生成器
+sidebar_position: 14
+---
+
+# Av1an 命令生成器
+
+Av1an命令生成器是一个基础工具，用于轻松生成AV1编码的Av1an命令。该工具采用Zig编程语言编写，其功能与[rAV1ator CLI](../utilities/rav1ator-cli.mdx)类似，都能根据用户输入生成Av1an命令。
+
+[GitHub项目链接](https://github.com/gianni-rosato/av1an-command-gen/)
+
+## 工具描述
+
+Av1an命令生成器主要面向初学者设计，但经验丰富的编码人员也可用它加速Av1an脚本编写。该程序生成的AV1视频编码命令适用于[Av1an](../utilities/av1an.mdx)——一个支持分块编码的工具，可与[aomenc](../encoders/aomenc.mdx)、[SVT-AV1](../encoders/SVT-AV1.mdx)和[rav1e](../encoders/rav1e.mdx)编解码器配合使用。
+
+本工具通过命令行参数接收视频分辨率、帧率、目标编解码器、速度预设和目标比特率范围等参数，自动计算瓦片行列数、滞后帧数、CRF值和编码器速度预设等设置，最终生成完整的`av1an`编码命令字符串。
+
+## 使用方式
+
+```bash
+av1an-command-gen [宽度] [高度] [帧率] [编码器] [速度] [目标比特率]
+```
+
+- `宽度` - 输入视频宽度（像素）
+- `高度` - 输入视频高度（像素） 
+- `帧率` - 输入视频帧率
+- `编码器` - 可选`aom`、`svt`或`rav1e`
+- `速度` - 可选`slower`、`slow`、`med`、`fast`、`faster`
+- `目标比特率` - 可选`lowest`、`low`、`med`、`high`
+
+## 使用示例
+
+生成1280x720分辨率/24fps视频的rav1e编码命令（中等速度/低比特率目标）：
+
+```bash
+av1an-command-gen 1280 720 24 rav1e med low
+```
+
+生成1920x1080分辨率/30fps视频的svt-av1编码命令（快速/高比特率目标）：
+
+```bash
+av1an-command-gen 1920 1080 30 svt fast high
+```
+
+## 安装指南
+
+需先安装[Zig](https://ziglang.org/) v0.11.0编程语言环境。
+
+编译命令：
+
+```bash
+zig build
+```
+
+编译完成后，可在`zig-out/bin/`目录下找到可执行文件`av1an-command-gen`。
+
+## 许可协议
+
+本项目采用BSD 3-Clause开源许可证。

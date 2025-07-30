@@ -1,0 +1,18 @@
+---
+title: rAV1ator
+sidebar_position: 5
+---
+
+# rAV1ator
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+rAV1ator 是 [Aviator](../utilities/Aviator.mdx) 的一个分支版本，专为使用 [Av1an](../utilities/av1an.mdx) 和 [rav1e](../encoders/rav1e.mdx) 编解码器而设计，而非原版的 [SVT-AV1](../encoders/SVT-AV1.mdx)。该软件以 Flatpak 格式分发（依赖项已内置），可通过以下命令安装：
+
+```bash
+flatpak --user remote-add --no-gpg-verify project-volo https://giannirosato.com/repo && flatpak --user install project-volo net.natesales.rAV1ator
+```
+
+最初 Aviator 计划改用当前 rAV1ator 采用的 Av1an + rav1e 后端方案，但由于两者目标定位的根本差异以及 Flathub 对 Rust 依赖项的处理问题，最终决定将项目拆分。Aviator 旨在提供简单易用的 AV1 编码方案，而 rAV1ator 则专门为编解码器爱好者提供便捷的 Av1an 和 rav1e 访问渠道。rAV1ator 目前由 Gianni Rosato 和 Trix 维护。

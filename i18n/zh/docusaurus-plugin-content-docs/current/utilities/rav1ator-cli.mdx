@@ -1,0 +1,245 @@
+---
+title: rav1ator-cli 命令行工具
+sidebar_position: 6
+templating: true
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# rAV1ator CLI
+
+rAV1ator CLI（简称`rav1ator-cli`）是一款TUI工具，提供交互式命令行界面，可通过[Av1an](../utilities/av1an.mdx)使用多种编码器进行视频转码，支持的编码器包括[rav1e](../encoders/rav1e.mdx)、[aomenc](../encoders/aomenc.mdx)（特指aomenc页面中提到的aom-av1-lavish版本）、[SVT-AV1](../encoders/SVT-AV1.mdx)、[x265](../encoders/x265.mdx)和[x264](../encoders/x264.mdx)。
+
+rAV1ator CLI最初由Gianni Rosato在https://github.com/gianni-rosato/rav1ator-cli维护，自2025年1月起由Ultimaxx在https://github.com/ultimaxx/rav1ator-cli接手维护，原仓库已被归档。
+
+```bash
+~ > rav1ator-cli -h
+rAV1ator: CLI Edition_ v0.2.4
+
+使用方法:
+	rav1ator-cli [输入文件] [输出文件] [--offline]
+
+依赖项(Arch系统): 
+	rust ffmpeg python mkvtoolnix-cli vapoursynth gum numactl vapoursynth-plugin-bestsource-git av1an ffms2
+
+选项说明(当前每次只能使用一个有效选项):
+	-h, --help			显示本帮助信息
+	-l, --last-used		显示最近使用的编码设置
+	-f, --full-history	显示完整的".rav1ator-cli-history"历史记录
+	-b, --binaries		仅安装二进制文件后退出
+	-x, --offline		离线模式(不检查更新)
+	-a, --batch			批量编码(对指定目录下所有视频文件使用相同设置编码)
+```
+
+rAV1ator CLI具备以下功能：
+
+- 无需包管理器即可独立检查安装状态和更新情况
+- 下载大多数情况下使用-O3 -flto优化的AVX2编码器二进制文件，并提供详细安装指引
+- 记忆编码历史记录，支持查看完整历史或最近使用的命令
+- 支持对目录下所有视频文件进行批量编码
+- 支持x264/x265/aomenc/SVT-AV1/rav1e编码器，可设置速度预设、CRF/质量值、FFmpeg参数和编码器参数
+- 根据用户选择生成Av1an编码命令并执行，将输入视频编码为MKV格式
+- 支持全新编码或继续之前中断的rAV1ator CLI编码任务
+- 提供丰富的交互功能如加载动画、提示框和下拉菜单
+- 通过SHA256哈希自动校验二进制文件安全性和完整性
+
+该工具旨在通过直观的视觉反馈简化命令行视频编码流程，交互式引导界面让用户无需深入了解编码知识即可快速配置参数。
+
+<img width="640" height="360" src="https://raw.githubusercontent.com/av1-community-contributors/images/main/rav1ator_cli_demo1.avif" alt="rAV1ator-cli演示1"/>
+
+<img width="640" height="360" src="https://raw.githubusercontent.com/av1-community-contributors/images/main/rav1ator_cli_demo2.avif" alt="rAV1ator-cli演示2"/>
+
+## 安装指南
+
+rAV1ator CLI原生支持Linux系统，Windows系统可通过WSL2运行。下文提供WSL2配置教程。暂不支持macOS平台。
+
+## Linux (Arch系统)
+
+本教程针对Arch Linux系统编写。其他发行版操作类似，Arch特有软件包会特别标注。Ubuntu用户可参考本站[AV1入门指南](https://wiki.x266.mov/blog/av1-encoding-for-dummies)博文的相关章节。
+
+如需在其他发行版上使用本教程，请参阅[其他Linux系统](#linux-其他)章节。
+
+0. 首先更新系统(Arch系统):
+```bash
+sudo pacman -Syu
+```
+
+1. 安装`yay`(仅Arch):
+```bash
+sudo pacman -S --needed base-devel git
+git clone https://aur.archlinux.org/yay.git
+cd yay && makepkg -si
+```
+
+2. 安装所有依赖项:
+```bash
+yay -Syu openssl ffmpeg python mkvtoolnix-cli vapoursynth gum numactl vapoursynth-plugin-bestsource-git av1an ffms2
+```
+
+3. 安装rav1ator-cli:
+```bash
+curl -sOJ https://raw.githubusercontent.com/ultimaxx/rav1ator-cli/main/rav1ator-cli && chmod +x rav1ator-cli
+sudo cp rav1ator-cli /usr/local/bin
+```
+
+安装完成！运行`rav1ator-cli -h`查看帮助信息，开始您的编码之旅吧！
+
+## 其他Linux系统
+
+Ubuntu用户可参考[AV1入门指南](https://wiki.x266.mov/blog/av1-encoding-for-dummies)了解不使用distrobox的安装方式。但distrobox能让你在其他发行版上使用Arch的前沿软件包管理。相比Docker，distrobox对新手更友好(底层仍使用Docker/Podman)。本教程重点介绍基于Podman的Distrobox方案。
+
+0. 根据您的发行版安装Distrobox和Podman，并完成基础配置
+
+1. 若已使用Podman、需重建Distrobox或长期未更新Arch镜像，建议先执行`podman image rm docker.io/archlinux/archlinux:latest`。不确定时执行该命令也无妨。**创建新Distrobox遇到问题时均应执行此操作**
+
+2. 创建distrobox容器(示例命名为rvcli-box):
+```bash
+distrobox-create --name rvcli-box --image archlinux:latest
+```
+
+3. 进入容器环境:
+```bash
+distrobox enter rvcli-box
+```
+
+4. 更新系统:
+```bash
+sudo pacman -Syu
+```
+
+5. 安装yay:
+```bash
+sudo pacman -S --needed base-devel git && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+```
+
+6. 安装依赖项:
+```bash
+yay -Syu openssl ffmpeg python mkvtoolnix-cli vapoursynth gum numactl l-smash vapoursynth-plugin-lsmashsource av1an ffms2
+```
+
+7. 下载rav1ator-cli:
+```bash
+curl -sOJ https://raw.githubusercontent.com/ultimaxx/rav1ator-cli/main/rav1ator-cli && chmod +x rav1ator-cli
+```
+
+8. 安装到系统路径:
+```bash
+sudo cp rav1ator-cli /usr/local/bin
+```
+
+9. 按`Ctrl`+`D`可退出distrobox
+
+安装完成！运行`rav1ator-cli -h`查看帮助信息。
+
+## Windows系统
+
+:::note Windows
+本节内容由Discord用户pat-e(`pate`)编写，针对Windows 11系统。
+:::
+
+**在Windows 11上启用WSL2并安装ArchWSL2** by pat-e
+
+### 基础安装
+
+1. 以管理员身份打开终端:  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/01_wsl_rv-cli.avif)
+2. 安装WSL(不包含默认发行版):  
+    ```pwsh
+    wsl.exe --install --no-distribution
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/02_wsl_rv-cli.avif)  
+    出现"Host Process for Windows Services"权限请求时选择"是":  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/03_wsl_rv-cli.avif)
+3. 安装完成后立即重启:  
+    ```pwsh
+    shutdown -r -f -t 1
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/04_wsl_rv-cli.avif)
+4. 从[GitHub发布页](https://github.com/sileshn/ArchWSL2)下载最新版ArchWSL2:  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/06_wsl_rv-cli.avif)
+5. 在SSD上创建永久存储目录(示例路径C:\\Stuff\\ArchWSL2):  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/07_wsl_rv-cli.avif)  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/08_wsl_rv-cli.avif)
+6. 解压下载的ZIP文件到新建目录:  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/09_wsl_rv-cli.avif)
+7. 运行解压后的"Arch.exe":
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/10_wsl_rv-cli.avif)
+8. 首次运行会创建虚拟磁盘(VHDx)，完成后按Enter继续(窗口将关闭)
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/11_wsl_rv-cli.avif)  
+9. 虚拟磁盘创建后再次运行"arch.exe"，完成初始化并创建独立用户账号(需记住用户名和密码):
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/12_wsl_rv-cli.avif)  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/13_wsl_rv-cli.avif)
+10. 窗口关闭后会自动重启。首先更新所有软件包(需输入sudo密码):
+    ```bash
+    sudo pacman -Syu
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/14_wsl_rv-cli.avif)
+11. 确认更新安装(输入"y"):
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/15_wsl_rv-cli.avif)
+12. 至此ArchWSL2安装完成
+
+### 启动与快捷方式
+
+启动Arch的两种方式：
+1. 通过命令提示符/终端/Windows搜索直接运行"wsl":  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/20_wsl_rv-cli.avif)  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/21_wsl_rv-cli.avif)
+2. 为安装目录下的"arch.exe"创建快捷方式:
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/22_wsl_rv-cli.avif)  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/23_wsl_rv-cli.avif)  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/24_wsl_rv-cli.avif)  
+
+**提示**：通过"arch.exe"启动时会定位到程序所在目录，可通过以下命令切换到家目录：
+```bash
+cd ~
+```
+![](https://raw.githubusercontent.com/av1-community-contributors/images/main/25_wsl_rv-cli.avif)
+
+### 解除WSL内存限制(可选)
+
+**注意**：WSL默认限制内存使用量为系统总内存的50%
+
+启动虚拟机时可看到内存受限情况：  
+![](https://raw.githubusercontent.com/av1-community-contributors/images/main/26_wsl_rv-cli.avif)
+
+调整内存限制的步骤：
+1. 用记事本新建配置文件：  
+    ```txt
+    [wsl2]
+    memory=12GB
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/27_wsl_rv-cli.avif)
+2. 内存值应设置为总内存减4GB(为Windows保留足够内存)。示例中16GB内存设为12GB
+3. 保存时输入路径变量：  
+    `%userprofile%`  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/28_wsl_rv-cli.avif)
+4. 按Enter键切换到用户配置目录:
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/29_wsl_rv-cli.avif)
+5. 文件类型选"所有文件"，保存为：  
+    `.wslconfig`  
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/30_wsl_rv-cli.avif)  
+    确保文件扩展名正确后关闭记事本
+6. 退出所有WSL/Arch会话(exit命令):
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/31_wsl_rv-cli.avif)
+7. 管理员权限终端中关闭WSL:  
+    ```pwsh
+    wsl --shutdown
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/32_wsl_rv-cli.avif)
+8. 重启WSL后通过以下命令验证内存设置:
+    ```bash
+    free -h
+    ```
+    ![](https://raw.githubusercontent.com/av1-community-contributors/images/main/33_wsl_rv-cli.avif)
+
+至此您已准备好使用rAV1ator CLI，祝您编码愉快！
+
+## macOS系统
+
+目前暂不支持macOS平台。技术上完全可行，未来可能会针对macOS推出专用版本(需维护单独的二进制文件)，但由于目前未见相关需求，暂不计划移植。
+
+### 故障排除
+
+- 如输出视频出现间歇性灰屏，建议先用x264`-qp 0`创建无损中间文件。此现象源于VC-1解码错误，非工具本身问题
+- 更多问题欢迎加入[AV1入门Discord社区](https://discord.gg/bbQD5MjDr3)，设有专用rAV1ator CLI频道交流

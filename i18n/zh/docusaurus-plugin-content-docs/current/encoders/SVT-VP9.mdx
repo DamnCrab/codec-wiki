@@ -1,0 +1,46 @@
+---
+title: SVT-VP9
+sidebar_position: 9
+---
+
+# SVT-VP9
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+SVT-VP9 是英特尔开发的 [VP9](../video/VP9.mdx) 编码器。<br/>
+与 [SVT家族](../encoders/SVT-HEVC.mdx) [其他成员](../encoders/SVT-AV1.mdx)类似，该编码器默认在多核处理器上具有出色的扩展性。
+
+虽然[官方参考编码器](../encoders/vpxenc.mdx)在码率控制灵活性方面更胜一筹且支持10位色深，<br/>但SVT-VP9在开箱即用时的编码速度要快得多。
+
+## FFmpeg集成
+SVT-VP9源码中捆绑了用于添加`libsvt_vp9`编码器的FFmpeg插件补丁。<br/>
+需要重新编译应用了该插件补丁的FFmpeg才能使用此功能。<br/>
+（在Windows系统上，使用[media-autobuild_suite](https://github.com/m-ab-s/media-autobuild_suite)是简便的编译方式）
+
+其操作方式与SVT-AV1的FFmpeg集成方案相似。典型命令行示例如下：<br/>
+`ffmpeg -i video.mp4 -c:v libsvt_vp9 -qp 38 -tune ssim -preset 7 -g 255 video_vp9.webm`
+
+<details>
+<summary>参数说明</summary>
+
+| 参数           | 描述 |
+|------------------|-------------|
+| -qp              | 量化参数，值越大画质越低。当前补丁版本范围为1-51，但可通过-qmin/-qmax设置为最高69以实现极低码率 |
+| -preset          | 速度预设。范围0-9，数值越大速度越快（默认值9） |
+| -tune            | 质量优化模式。可选"vq"（默认）、"ssim"或"vmaf" |
+| -g               | 图像组(GOP)大小。范围-2~255，-1表示永不更新帧内编码，-2表示自动模式<br/>建议设置为允许范围内的最大值以提高编码效率 |
+| -rc              | 码率控制模式<br/>可选"cqp"（固定量化参数，默认）、"vbr"（可变码率）或"cbr"（固定码率）<br/>（如需精确控制目标码率，建议使用**vpxenc的双通道模式**） |
+| -level           | 编码级别。范围1-6，通常不建议手动设置 |
+| -socket          | 指定使用的CPU插槽索引。默认为-1（使用所有可用处理器） |
+
+</details>
+
+## 支持的色彩空间
+
+SVT-VP9仅支持8位yuv420p格式。
+
+## 使用方法
+### 独立运行
+待补充。如果您能协助完善，请参阅[贡献指南](../contribution-guide.mdx)。

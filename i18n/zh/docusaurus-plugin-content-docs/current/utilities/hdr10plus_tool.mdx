@@ -1,0 +1,68 @@
+---
+title: hdr10plus_tool
+sidebar_position: 11
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# hdr10plus_tool
+
+**hdr10plus_tool** 是一个用Rust编写的命令行工具，用于处理HEVC文件中的HDR10+元数据。该工具曾命名为*hdr10plus_parser*。
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        您可以从[GitHub Releases](https://github.com/quietvoid/hdr10plus_tool/releases)下载Linux和macOS平台的预编译二进制文件，或按照以下说明自行编译。
+
+        请确保已安装Rust环境。
+
+        ```bash
+        git clone https://github.com/quietvoid/hdr10plus_tool.git
+        cd hdr10plus_tool
+        RUSTFLAGS="-C target-cpu=native" cargo build --release
+        ```
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        您可以从[GitHub Releases](https://github.com/quietvoid/hdr10plus_tool/releases)下载Windows平台的预编译二进制文件，或按照以下说明自行编译。
+
+        请确保已安装Rust环境。
+
+        ```pwsh
+        git clone https://github.com/quietvoid/hdr10plus_tool.git
+        cd hdr10plus_tool
+        set RUSTFLAGS=-C target-cpu=native 
+        cargo build --release
+        ```
+    </TabItem>
+</Tabs>
+
+## 使用说明
+
+```bash title="通用命令格式"
+hdr10plus_tool [选项] <子命令>
+```
+```bash title="查看子命令详细选项"
+hdr10plus_tool <子命令> --help
+```
+### 元数据提取
+```bash title="通过FFmpeg管道提取（推荐）"
+ffmpeg -hide_banner -strict -2 -i input.mkv -map 0:v:0 -c copy -vbsf hevc_mp4toannexb -f hevc - | hdr10plus_tool extract -o metadata.json -
+```
+```bash title="从原始码流提取"
+hdr10plus_tool extract video.hevc -o metadata.json
+```
+### 元数据注入
+
+```bash title="注入到原始码流"
+hdr10plus_tool inject -i video.hevc -j metadata.json -o injected_output.hevc
+```
+### 移除HDR10+元数据
+
+```bash title="通过FFmpeg管道移除（推荐）"
+ffmpeg -hide_banner -strict -2 -i input.mkv -map 0:v:0 -c copy -vbsf hevc_mp4toannexb -f hevc - | hdr10plus_tool remove -
+```
+```bash title="从原始码流移除"
+hdr10plus_tool remove video.hevc -o hdr10plus_removed_output.hevc
+```

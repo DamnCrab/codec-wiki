@@ -1,0 +1,137 @@
+---
+title: Opus
+sidebar_position: 2
+---
+
+# Opus 音频编解码器
+
+:::info 维护中
+本条目内容尚未完善，正在持续更新中。
+:::
+
+Opus 是一款开源音频编解码器，已基本取代 [Vorbis](../audio/Vorbis.mdx) 成为标准的开放式音频编码方案。在 WebM 视频容器中，推荐与 [VP9](../video/VP9.mdx) 或 [AV1](../video/AV1.mdx) 视频编解码器配合使用。
+
+Opus 以卓越的编码效率和独特的多声道优化著称。立体声 Opus 音频在 128kb/s 码率下即可达到[听觉透明](https://en.wikipedia.org/wiki/Transparency_(data_compression))（心理声学无损音质），而 [AAC](../audio/AAC.mdx) 普遍需要 256kb/s，[MP3](../audio/MP3.mdx) 则需要 320kb/s。实际透明阈值会因内容类型和编码实现有所不同（特别是非 Opus 编解码器），上述数值可能存在一定争议。
+
+[opus-codec.org](https://opus-codec.org/) 将其描述为"完全开放、免版税、高度通用的音频编解码器。Opus 在互联网语音和音乐实时传输领域无出其右，同时也适用于存储和流媒体应用。该标准由互联网工程任务组（IETF）发布为 [RFC 6716](https://datatracker.ietf.org/doc/html/rfc6716)，融合了Skype SILK编解码器和Xiph.Org CELT编解码器的技术。"
+
+Opus 支持以下特性：
+
+- 比特率范围：6 kb/s 至 510 kb/s（非立体声布局下每声道最高约255 kb/s）
+- 采样率范围：8 kHz（窄带）至 48 kHz（全频带）
+- 帧尺寸：2.5 ms 至 60 ms
+- 支持恒定比特率（CBR）与可变比特率（VBR）
+- 音频带宽覆盖窄带至全频带
+- 支持语音与音乐内容
+- 支持单声道与立体声
+- 最多支持255个声道（多流帧）
+- 动态可调比特率、音频带宽与帧尺寸
+- 优异的抗丢包能力与丢包隐藏（PLC）机制
+- 浮点与定点两种实现方式
+
+*信息来源：opus-codec.org 与 wiki.hydrogenaud.io*
+
+## 技术架构解析
+
+Opus 是混合型音频编解码器，由前文提到的两项技术组成：Skype 的 SILK 语音编解码器与 Xiph.Org 的 CELT 编解码器。其初期代号"Harmony"可能源于这两种编解码器的"和谐"协作，同时也暗含音乐和声的寓意。
+
+### SILK 编解码器
+
+源自 Skype 的 SILK 专为微软产品（如Skype）的语音通话设计。首个稳定版发布于2009年，采用BSD 2-Clause许可协议，这使其得以集成到Opus中。需注意的是，Opus中采用的SILK版本已进行重大修改，与原始独立版本不兼容。
+
+SILK 针对语音优化，支持的采样率范围有限：
+> 窄带：3-4000Hz
+> 中带：3-6000Hz
+> 宽带：3-8000Hz
+
+其延迟为10-60ms（取决于帧尺寸） + 5ms前向分析（用于噪声整形估计） + （必要时）1.5ms采样率转换开销。
+
+### CELT 编解码器
+
+与SILK类似，CELT同样采用BSD 2-Clause许可。预览版发布于2011年。"Code-Excited Lapped Transform"的缩写，CELT旨在成为Vorbis的真正继任者，在2005年Xiph.Org"Ghost"项目初期甚至被称为"Vorbis II"。
+
+CELT 设计为全频带通用编解码器，不特定优化某种音频类型，这使其明显区别于Xiph的[Speex](../audio/Speex.mdx)编解码器，而更接近Vorbis特性。相比[AAC](../audio/AAC.mdx)等竞争技术（甚至包括Vorbis），其计算复杂度更低，可实现与[AAC-LD](../audio/AAC.mdx#aac-ld--aac-eld)媲美的超低延迟。
+
+CELT 支持的采样率范围：
+> 窄带：3-4000Hz
+> 中带：3-6000Hz
+> 宽带：3-8000Hz
+> 超宽带：3-12000Hz
+> 全频带：3-20000Hz
+
+## 编码器实现
+
+### Opusenc 官方编码器
+
+Opus 的参考编码器 [opusenc](https://github.com/xiph/opus) 以出色性能和多功能性著称。作为libopus参考库的一部分，采用BSD 3-clause许可。虽然提供大量编码参数，但其默认设置已针对本地存储与播放场景优化。下文将重点介绍最佳实践参数。
+
+基础用法：`opusenc [选项] 输入文件 输出文件.opus`
+
+- `--bitrate #.###` 设置总体目标比特率（单位kbit/s）。注意与多数编码器不同，直接输入数值即可（如"128"表示128kbit/s），实际码率可能因高效VBR编码与目标值有所差异。有效范围6-510 kb/s。
+
+- `--vbr` 启用可变比特率编码（默认开启），根据内容动态分配比特以优化保真度。本地存储与播放场景的最佳选择。
+
+- `--cvbr` 在VBR基础上限制瞬时最大比特率。
+
+- `--hard-cbr` 强制使用恒定比特率。
+
+- `--music` 与 `--speech` 强制内容类型检测（适用于12-40kb/s码率范围）。
+
+- `--comp #` 设置编码复杂度（0-10，默认10）。
+
+- `--framesize #` 设置最大帧尺寸（单位毫秒）。减小可降低延迟但影响音质。注意40/60ms帧实际由多个20ms帧拼接而成，反而不利于编码效率与延迟。默认20。
+
+- `--expect-loss #` 预期丢包率（百分比），实时传输场景适用。默认0。
+
+- `--downmix-mono` 多声道下混为单声道。
+
+- `--downmix-stereo` 多声道下混为立体声。
+
+- `--no-phase-inv` 禁用相位反转（libopus 1.3后自动应用于立体声转单声道场景），轻微影响立体声质量。
+
+- `--max-delay #` 设置容器最大延迟（0-1000ms，默认1000）。
+
+参考编码示例：
+```bash
+opusenc "input.wav" "output.opus" --bitrate 96
+```
+
+FFmpeg调用libopus示例：
+```bash
+ffmpeg -i "input.flac" -c:a libopus -b:a 128K "output.ogg"
+```
+
+详细参数建议参考[Opus推荐设置指南](https://wiki.xiph.org/Opus_Recommended_Settings#Bandwidth_Transition_Thresholds)。
+
+::::info FFmpeg已知问题
+由于FFmpeg的[#5718](https://trac.ffmpeg.org/ticket/5718)缺陷，libopus无法自动将`5.1(side)`映射为`5.1`。解决方案：
+```bash
+ffmpeg -i "input.flac" -c:a libopus -af aformat=channel_layouts=5.1 "output.ogg"
+```
+
+:::tip 高级映射
+多声道流映射方案：
+```bash
+-af aformat=channel_layouts=7.1|5.1|stereo -mapping_family 1
+```
+:::
+
+::::
+
+### FFopus 实验性编码器
+
+FFmpeg原生实现的实验性编码器，编码效率普遍认为不及libopus，唯一优势是能处理libopus不支持的`5.1(side)`音轨。仅实现Opus的CELT部分。
+
+使用示例：
+```bash
+ffmpeg -i "input.wma" -c:a opus -b:a 128K -strict -2  "output.opus"
+```
+
+### vac-enc 增强编码器
+
+[VAC](https://github.com/gianni-rosato/vac-enc)（Value Added Codec）是基于libopus的封装工具，通过SoX实现高质量��采样，支持输出`.ogg`容器。理论上可提升编码效率，但尚未经过全面测试。
+
+16位有符号小端PCM转128kbit/s Opus示例：
+```bash
+vac-enc input.wav output.ogg 128
+```

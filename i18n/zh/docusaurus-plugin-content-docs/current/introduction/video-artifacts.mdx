@@ -1,0 +1,81 @@
+---
+sidebar_position: 4
+---
+
+# 识别视频伪影
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/solar_system_compression_artifacts_2x.avif" type="image/avif" />
+    <img src="https://raw.githubusercontent.com/av1-community-contributors/images/main/solar_system_compression_artifacts_2x.png" alt="XKCD关于压缩伪影的漫画" width="659" height="540" />
+</picture>
+
+*https://xkcd.com/2414*
+
+视频伪影是指出现在视频中的视觉失真或异常现象，会影响图像质量。伪影首先按时间/序列相关（时域）或位置相关（空域）进行分类。如果视频暂停时仍能看到伪影，则可能属于空间伪影；若在视频播放时更为明显，则可能属于时域伪影。
+
+## 摩尔纹
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/moire-pattern.jxl" type="image/jxl" />
+    <img src="https://raw.githubusercontent.com/av1-community-contributors/images/main/moire-pattern.jpeg" alt="砖墙上的摩尔纹" width="205" height="250" />
+</picture> 
+
+当源图像中的图案与编码器的空间处理方式存在轻微错位时，会产生大范围的空间干涉图案，即摩尔纹。编码器生成的伪影会在解码时使源图像图案产生奇异的漩涡状效果。
+
+## 阶梯效应
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/staircase-effect.jxl" type="image/jxl" />
+    <img src="https://raw.githubusercontent.com/av1-community-contributors/images/main/staircase-effect.jpeg" alt="阶梯效应" width="452" height="548" loading="lazy" />
+</picture>
+
+阶梯效应是一种空间伪影，表现为本应平滑的直线或曲线边缘呈现锯齿状，形似阶梯。抗锯齿滤镜正是用于减轻这种效应。
+
+## 色彩渗色
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/color-bleed.jxl" type="image/jxl" />
+    <img src="https://github.com/av1-community-contributors/images/raw/main/color-bleed.jpeg" alt="色彩渗色" width="624" height="276" loading="lazy" />
+</picture>
+
+色彩渗色是指图像中某种颜色的边缘意外渗入相邻颜色区域的现象。其成因通常与压缩算法对色度信息的处理方式有关。色度表示图像或视频中的颜色信息，通常与亮度信息分开压缩。某些压缩算法会过度压缩色度信息，导致色彩精度和细节丢失。
+
+## 振铃效应
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/ringing-artifact.jxl" type="image/jxl" />
+    <img src="https://github.com/av1-community-contributors/images/raw/main/ringing-artifact.jpeg" alt="星形图案上的振铃效应" width="684" height="599" loading="lazy" />
+</picture>
+
+注意上图星形边缘的蓝色和粉色条纹（以及阶梯状等其他明显压缩伪影），这些条纹即为振铃效应。该现象与后文将讨论的蚊式噪声非常相似。
+
+## 块效应
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/blocking_on_cat.jxl" type="image/jxl" />
+    <img src="https://github.com/av1-community-contributors/images/raw/main/blocking_on_cat.jpeg" alt="猫咪图像上的块效应" loading="lazy" />
+</picture>
+
+要理解这种伪影，首先需要了解基于DCT（离散余弦变换）的压缩技术。该技术通过将数字图像或视频分割为小块（称为"块"），使用数学公式将数据转换为更紧凑的表示形式，从而实现文件体积缩减。
+
+但这种压缩技术有时会导致压缩图像出现可见"失真"。最常见的失真类型就是"块效应"——当压缩块的边缘变得可见时，会在图像上形成网格状图案。
+
+简而言之，当压缩算法因比特率/数据不足而过度简化块内信息时，就会导致图像出现可见的块状网格，即DCT块效应压缩伪影。
+
+## 色带/等高线效应
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/colorbanding_ex1.jxl" type="image/jxl" />
+    <img src="https://github.com/av1-community-contributors/images/raw/main/colorbanding_ex1.jpeg" alt="色带效应" width="418" height="303" loading="lazy" />
+</picture>
+
+色带或等高线效应是分色现象的特殊形式，表现为图像中出现条带状色块。当视频采用过粗糙的量化配置（视频压缩中通过舍入信号值减少数据量的技术）且缺乏可用色彩渐变时，就会导致视频内容呈现"分层"外观——色彩过渡不再平滑，而是出现突兀的色带。
+
+## 蚊式噪声
+
+<picture>
+    <source srcset="https://github.com/av1-community-contributors/images/raw/main/mosquito-noise.jxl" type="image/jxl" />
+    <img src="https://github.com/av1-community-contributors/images/raw/main/mosquito-noise.jpeg" alt="铁栅栏周围的蚊式噪声" width="505" height="353" loading="lazy" />
+</picture>
+
+蚊式噪声表现为视频或图像中锐利边缘或精细细节周围出现细小、移动的块状伪影。这种伪影常见于采用DCT算法（如前文所述的MPEG视频或JPEG图像）压缩的视频中。

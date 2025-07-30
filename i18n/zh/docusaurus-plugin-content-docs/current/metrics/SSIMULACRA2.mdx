@@ -1,0 +1,104 @@
+---
+title: SSIMULACRA2
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# SSIMULACRA2
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+SSIMULACRA 2 是一种基于多尺度结构相似性指数(MS-SSIM)概念的视觉保真度指标，在感知相关色彩空间中计算，并添加了两个（非对称）误差图，使用两种不同的范数进行聚合。根据与主观评价结果的相关性，它目前是最具公信力的视觉质量评估指标，被认为是比较编码器性能的稳健方法。虽然在极高保真度场景下[Butteraugli](../metrics/butteraugli.mdx)可能更优，但SSIMULACRA 2被公认为中/低保真度比较的最佳选择。尽管该指标不具备帧间时间感知能力，但依然是视频保真度对比的强力工具。
+
+虽然Cloudinary提供了[官方参考实现](https://github.com/cloudinary/ssimulacra2)，但大多数用户会更倾向使用[Rust实现版本`ssimulacra2_rs`](https://github.com/rust-av/ssimulacra2)。
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="cargo" label="Cargo" default>
+        通过cargo安装ssimulacra2_rs：
+        ```bash
+        cargo install ssimulacra2_rs
+        ```
+    </TabItem>
+    <TabItem value="archlinux" label="Archlinux AUR">
+        在Archlinux系统中，可通过[AUR](https://wiki.archlinux.org/title/Arch_User_Repository)安装。
+        使用您常用的AUR助手安装`ssimulacra2_bin-git`即可：
+
+        ```bash
+        paru -S ssimulacra2_bin-git
+        ```
+    </TabItem>
+</Tabs>
+
+## 使用说明
+### 图像对比
+图像对比操作简单，执行命令：
+```bash
+ssimulacra2_rs image 原图.png 失真图.png
+```
+
+### 视频对比
+
+视频对比执行以下命令：
+```bash
+ssimulacra2_rs video 源视频.mkv 失真视频.mkv
+```
+
+:::tip 可视化图表
+可通过`-g`参数生成质量分析图表：
+```bash
+ssimulacra2_rs video 源视频.mkv 失真视频.mkv -g
+```
+:::
+#### 多线程处理
+ssimulacra2_rs支持多线程，但扩展性欠佳，
+这很可能受限于内存带宽。
+不过仍能获得显著的加速效果。
+
+使用`--frame-threads`或`-f`参数启用多线程。
+例如使用16线程：
+```bash
+ssimulacra2_rs video 源视频.mkv 失真视频.mkv -f 16
+```
+:::info 线程数量建议
+建议设置实际线程数的50%，超过这个数值不会带来额外收益。
+:::
+
+:::warning 内存限制
+若系统内存较小，多线程运行时可能出现内存不足错误。
+此时需要降低线程数量。
+:::
+#### 帧采样模式
+SSIMULACRA 2本质是图像质量评估指标，而非视频质量指标。
+这意味着应用于视频时仅评估独立帧的质量分数，不利用时间轴信息。
+因此可以通过帧采样来快速获取有代表性的评分。
+
+使用`--increment`或`-i`参数启用帧采样：
+```bash
+ssimulacra2_rs video 源视频.mkv 失真视频.mkv -i 3
+```
+
+:::info 采样间隔建议
+为避免评分偏差，建议采用奇数作为采样间隔。
+质数间隔能进一步降低采样偏差风险。
+推荐使用3、5、7、11或13帧间隔，所得分数与全帧评估结果偏差较小。
+
+由于视频编码器处理时域层级的方式，应避免使用2的幂次数（2/4/8/16...）作为间隔。
+:::
+
+## 评分解读
+SSIMULACRA 2输出范围为(-inf,100]的评分。根据开发者说明，图像质量评估的分数与主观视觉质量对应关系如下：
+
+- 极高质量：`90`分及以上
+- 高质量：`70`至`90`分
+- 中等质量：`50`至`70`分
+- 低质量：低于`50`分
+
+视频质量评估时，达到相同主观质量所需的分数阈值较低。
+例如平均分约`80`分即可实现"视觉无损"效果。
+但该结论尚未经过严格验证。

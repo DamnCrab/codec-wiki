@@ -1,0 +1,57 @@
+---
+title: FFV1
+sidebar_position: 12
+---
+
+# FFV1无损视频编码格式
+
+:::danger 招募贡献者
+本节内容亟待完善。如果您能提供帮助，请参阅[贡献指南](../contribution-guide.mdx)参与编辑！
+:::
+
+FFV1（[RFC9043规范](https://datatracker.ietf.org/doc/html/rfc9043)）是一种面向档案保存的无损帧内视频编解码器，由Michael Niedermayer开发并作为[FFmpeg](../utilities/ffmpeg.mdx)项目组成部分。该编解码器支持广泛的色彩空间，可处理8至16位色深的YUV和RGB内容（RGB最高支持14位），包含Alpha通道。相比[UT Video](../video/utvideo.mdx)等其他无损视频编码器，FFV1具有优异的并行化支持并能实现更高压缩率，但相应地需要更多计算资源。
+
+## 发展历程
+
+2003年该编解码器被纳入FFmpeg；2006年其比特流规范首次冻结（官方称为FFV1版本0）。2009年推出的版本1扩展了视频位深支持。版本2始终处于实验阶段未曾正式发布。
+
+2013年冻结的第三版比特流规范沿用至今（2024年），新增了多线程支持和帧完整性校验功能。
+
+目前正在制定[第四版](https://datatracker.ietf.org/doc/draft-ietf-cellar-ffv1-v4/)规范，预计将改进色彩空间支持、提升压缩效率，并可能引入真正的帧间预测功能。
+
+## 使用指南
+
+```bash title="高速多线程编码"
+ffmpeg -i input.mkv -c:v ffv1 -slices 16 out.mkv
+```
+
+```bash title="高压缩率慢速编码"
+ffmpeg -i input.mkv -c:v ffv1 -g 60 -slices 4 -context 1 -coder 2 out.mkv
+```
+
+```bash title="档案级推荐参数：高压缩+多线程"
+ffmpeg -i input.mkv -c:v ffv1 -g 1 -slices 16 -slicecrc 1 -context 1 -coder 2 out.mkv
+```
+
+### 关键参数说明
+- `slices` - 将帧分割为多个可并行编码/解码的区块。可选值： [`4`, `6`, `9`, `12`, `16`, `24`, `30`]，默认为`4`
+- `slicecrc` - 设为`1`可启用比特流错误检测，档案用途必须启用。可选`0`或`1`
+- `context` - 设为`1`使用更大上下文模型，通常可获得更好压缩率。可选`0`或`1`
+- `coder` - 熵编码方法选择：
+  - `0` - Golomb-Rice（速度更快，默认值）
+  - `1` - 范围编码（适用于高位深及更高压缩需求）
+  - `2` - 带自定义状态转移表的范围编码（与`1`几乎相同）
+- `g` - 设置GOP长度。档案用途必须设为`1`。[详见下文说明](#帧内编码的特殊注意事项)
+
+## 帧内编码的特殊注意事项
+
+帧内编解码器不使用运动补偿、帧间参考等常见技术，每帧均为独立编码。典型的帧内编解码器包括Motion JPEG（有损）、Motion JPEG 2000（有损/无损）和[UT Video](../video/utvideo.mdx)（无损）。
+
+细心的读者可能注意到：设置`GOP长度`并非帧内编解码器的常见特性。实际上，仅当`GOP长度`设为`1`时，FFV1才是严格意义上的帧内编解码器。当该值大于1时，其上下文模型会依赖同GOP内的其他帧，这与帧内编解码定义相悖。因此强烈建议档案用途设为`1`——这样当单帧损坏时仅影响该帧；若使用较大GOP值，则可能导致更大范围的视频数据丢失。
+
+参考文献：
+- [维基百科](https://en.wikipedia.org/wiki/FFV1)
+- [RFC9043规范](https://datatracker.ietf.org/doc/html/rfc9043)
+- [FFmpeg文档](https://trac.ffmpeg.org/wiki/Encode/FFV1)
+- [技术讨论帖](https://forum.shotcut.org/t/exporting-as-ffv1-change-form-to-support-lossless-parameters/41230/19?page=2)
+- [参数解析](https://video.stackexchange.com/questions/24874/what-does-the-context-parameter-mean-when-using-ffv1-in-ffmpeg)

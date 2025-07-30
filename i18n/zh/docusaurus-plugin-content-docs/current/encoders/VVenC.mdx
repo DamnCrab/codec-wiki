@@ -1,0 +1,105 @@
+---
+title: VVenC
+sidebar_position: 12
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# VVenC
+
+<picture>
+    <source srcset="https://raw.githubusercontent.com/av1-community-contributors/images/main/VVenC_Spam.avif?token=GHSAT0AAAAAACEZPDXI3OYO3Z4Q7LU3Z52EZHY7FMA" type="image/avif" />
+    <img src="https://autumn.revolt.chat/attachments/wU4lo6SU-hRjZSVeqd9vCOeAskthYXmiWHaXUTjyTa/VVenC_Spam.webp"
+alt="vvencapp终端输出不断刷新的每帧编码进度，原因只有天知道" width="XX" height="YY" loading="lazy" />
+</picture>
+
+VVenC是由弗劳恩霍夫海因里希-赫兹研究所（HHI）开发的一款开源C++命令行应用程序，用于编码[H.266/VVC](../video/VVC.mdx)视频。
+
+## 安装指南
+
+<Tabs>
+    <TabItem value="unixlike" label="Linux & macOS">
+        Arch Linux用户可通过AUR获取`vvenc`和`vvenc-git`软件包。
+
+        从源码编译需先安装CMake：
+
+        ```bash
+        git clone https://github.com/fraunhoferhhi/vvenc.git
+        cd vvenc
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build .
+        ```
+        编译生成的可执行文件位于`bin/release-static/`目录
+
+        ### FFmpeg集成方案
+
+        自2024年6月15日起，FFmpeg已正式支持编译集成`libvvenc`。若使用早期版本FFmpeg需手动打补丁，完整教程参见[VVenC官方Wiki](https://github.com/fraunhoferhhi/vvenc/wiki/FFmpeg-Integration)（[存档](https://web.archive.org/web/20230509115800/https://github.com/fraunhoferhhi/vvenc/wiki/FFmpeg-Integration)）。
+
+        2024年初VVC解码器已[并入FFmpeg主分支](https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/301ed950d1c3c500d0c2eee8472587dc5e691c04)，FFmpeg 7.0为首个支持版本。如需集成`vvdec`解码器，请参考[VVenC官方Wiki](https://github.com/fraunhoferhhi/vvdec/wiki/FFmpeg-Integration)（[存档](https://web.archive.org/web/20240809090834/https://github.com/fraunhoferhhi/vvdec/wiki/FFmpeg-Integration)）。
+
+        另有Marten Martin Eesmaa维护的[FFmpeg-VVC](https://github.com/MartinEesmaa/FFmpeg-VVC)分支版本，该作者同时创建了[VVCEasy](https://github.com/MartinEesmaa/VVCEasy)项目提供VVC相关教程资源。
+
+        请注意以下脚本构建的FFmpeg遵循*LGPL 2.1或后续版本*许可，在保持编译参数不变的前提下可合法分发二进制文件。
+
+        ```bash title="构建集成libvvdec/libvvenc/fdk-aac的FFmpeg"
+        brew install libxml2 ffmpeg nasm # macOS专用命令；Linux用户请使用系统包管理器，软件包名称可能不同
+        git clone https://github.com/fraunhoferhhi/vvenc
+        git clone https://github.com/fraunhoferhhi/vvdec
+        git clone https://github.com/mstorsjo/fdk-aac
+        cd vvenc && mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
+        sudo cmake --build . --target install -j $nproc
+        cd ../../
+        cd vvdec && mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
+        sudo cmake --build . --target install -j $nproc
+        cd ../../
+        cd fdk-aac && ./autogen.sh && ./configure
+        make -j
+        sudo make install
+        cd ../
+        git clone --depth=1 https://github.com/MartinEesmaa/FFmpeg-VVC
+        cd FFmpeg-VVC
+        export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+        ./configure --enable-libfdk-aac --enable-libvvenc --enable-libvvdec --enable-static --enable-pic --enable-libxml2 --pkg-config-flags="--static" --enable-sdl2
+        make -j
+        ```
+        构建完成后，可执行文件位于最终所在目录。
+
+    </TabItem>
+    <TabItem value="windows" label="Windows">
+        待补充。欢迎参考[贡献指南](../contribution-guide.mdx)提交内容。
+    </TabItem>
+</Tabs>
+
+## 使用示例
+
+VVenC提供两种编码器：简易编码器（`vvencapp`）和基于[VTM](./VTM.mdx)配置方案的全功能专家模式编码器（`vvencFFapp`）。早期版本仅支持YUV输入，现已新增Y4M格式支持。
+
+基础用法示例：
+
+```bash title="标准VVenC输入"
+vvencapp -i input.y4m --qp 20 -o output.266
+```
+```bash title="慢速预设+qpa(默认启用)+YUV420P10"
+vvencapp -i input.y4m --preset slow --qpa on --qp 20 -c yuv420_10 -o output.266
+```
+```bash title="FFmpeg管道输入"
+ffmpeg -hide_banner -loglevel error -i input.mkv -pix_fmt yuv420p10le -strict -1 -f yuv4mpegpipe - | vvencapp -i - --y4m --preset medium --qpa on --qp 20 -c yuv420_10 -o output.266
+```
+
+```bash title="FFmpeg快速预设+qp32输出MP4"
+ffmpeg -i input.mkv -c:v libvvenc -qp 32 -preset fast out.mp4
+```
+
+:::info
+FFmpeg的vvenc插件仅支持yuv420p10le像素格式输出，因此生成的视频始终为10位色深。
+:::
+
+:::info QPA说明
+VVenC默认使用QP（量化参数）进行固定质量编码。若需类似CRF的码率控制，默认已启用QPA参数。
+QPA（通过--qpa启用）基于[XPSNR](../metrics/XPSNR.mdx)实现感知优化的动态QP调整，可进行空域/时域QP自适应及时域率失真优化。
+:::

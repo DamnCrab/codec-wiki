@@ -1,0 +1,51 @@
+---
+title: SubStation Alpha字幕格式
+description: SubStation Alpha字幕格式规范
+keywords: [SSA, ASS, 字幕]
+---
+SubStation Alpha（SSA），4.0+版本又称为Advanced Substation Alpha（ASS），是一种字幕格式。该格式最初由同名Windows程序使用，主要面向卡拉OK和动漫爱好者社区。相比其他字幕格式，其高级样式功能使其在压制组中广受欢迎。
+
+# 概述
+SSA是一种"纯文本"格式，ASS版本支持Unicode编码。可以保存为扩展名为.ssa或.ass的纯文本文件，也可以封装到Matroska（.mkv）或AVI（.avi）文件中。虽然原版SubStation Alpha软件已成为弃置软件，但众多媒体制作、封装和播放软件都支持SSA格式，包括[VLC](../video-players.mdx)、[MPV](../video-players.mdx)和[FFmpeg](../utilities/ffmpeg.mdx)。
+
+## 格式规范
+SSA使用"script"一词指代追踪视频的字幕内容。行首的分号';'用于标记注释。
+
+### ASS（SSA v4+）文件头示例
+```
+[Script Info]
+; 这是Advanced Sub Station Alpha v4+格式脚本
+; Sub Station Alpha相关信息和下载
+; 请访问 http://www.eswat.demon.co.uk/
+; 或邮件联系 kotus@eswat.demon.co.uk
+; 
+; Advanced Sub Station Alpha脚本格式由#Anime-Fansubs@EfNET开发
+; 官网 http://www.anime-fansubs.org
+; 
+; 更多信息和下载请访问 http://vobsub.edensrising.com/
+; 或邮件联系 gabest@freemail.hu
+; 
+; 注意：本文件由Subresync保存
+; 
+ScriptType: v4.00+
+Collisions: Normal
+PlayResX: 384
+PlayResY: 288
+Timer: 100.0000
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Tahoma,16,&H00000000,&H00ffffff,&H00ffffff,&H00c0c0c0,-1,0,0,0,100,100,0,0.00,1,2,3,2,20,20,20,1
+
+[Events]
+Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:01:41.70,0:01:46.84,Default,,0000,0000,0000,,Le rugissement des larmes !\NTu es mon ami.
+Dialogue: 0,0:02:00.99,0:02:02.87,Default,,0000,0000,0000,,Est-ce vraiment Naruto ?
+```
+
+## 延伸阅读：
+[多媒体维基](https://wiki.multimedia.cx/index.php/SubStation_Alpha)
+
+[格式规范文档](http://moodub.free.fr/video/ass-specs.doc)
+
+[原版软件存档](https://web.archive.org/web/20030603235926/http://www.eswat.demon.co.uk/substation.html)

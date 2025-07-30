@@ -1,0 +1,33 @@
+---
+title: FLAC
+sidebar_position: 7
+---
+
+# FLAC
+
+:::danger 需要帮助
+本节内容亟待完善。如果您能提供帮助，请查阅我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+FLAC（Free Lossless Audio Coding，免费无损音频编码）是一款2001年发布的开源无损音频编解码器，具有广泛的兼容性和支持度。它是目前通用无损音频格式中编码效率最高的方案。
+
+FLAC文件通常封装在ogg容器中，扩展名为`.flac`或`.ogg`。较少见的情况下也可封装在matroska容器（`.mkv`或`.mka`）中与视频流混合使用。
+
+:::caution 重要提示
+不建议将有损编码文件转码为FLAC格式，因为文件体积会大幅增加，而有损编码导致的音质损失无法恢复。FLAC最适合用于保存原始无损音源。
+:::
+
+## 软件支持
+截至2024年，FLAC已获得主流网页浏览器和媒体播放器的广泛支持。
+
+### 使用[FFmpeg](../utilities/ffmpeg.mdx)将WAV转为FLAC：
+
+```bash
+ffmpeg -i example.wav -c:a flac example.flac
+```
+
+### 使用FLAC命令行工具转换WAV：
+可通过0-8的压缩等级参数控制编码效率，0表示最快速度，8表示最高压缩率。
+```bash
+flac example.wav -8 -o example.flac
+```

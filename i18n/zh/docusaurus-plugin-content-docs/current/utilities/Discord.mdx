@@ -1,0 +1,91 @@
+---
+title: Discord
+sidebar_position: 14
+---
+
+# Discord
+
+:::info 维护中
+本条目内容不完整，正在完善中。
+:::
+
+:::caution 待审核
+本条目内容可能不完全准确，正在等待进一步审核以评估信息质量。
+:::
+
+本条目与其他条目略有不同，未来可能会移至博客文章。以下是多个表格，列举了Discord支持本地播放（非直播）的编解码器。这些表格基于多个平台的社区测试，并不全面。
+
+## 图例说明
+
+图例使用表情符号表示完全支持、部分支持、通过[Discord嵌入解决方案](https://wiki.x266.mov/blog/embedding-the-un-embeddable)支持以及不支持的情况。
+
+- ✅ 完全支持
+- ⚠️ 部分支持
+- 🛠️ 通过Discord嵌入解决方案支持
+- ❔ 未测试或未知
+- ❌ 不支持
+
+若浏览器与特定平台不兼容，则标记为N/A。
+
+## 视频编解码器与容器
+
+**[H.264](../video/AVC.mdx)** 4:2:0 8位有损 | .mp4
+
+| 浏览器  | macOS | Windows | iOS | Android | Linux |
+|---------|:-----:|:-------:|:---:|:-------:|:-----:|
+| Chrome  | ✅     | ✅      | ❔  | ❔       | ✅    |
+| Firefox | ✅     | ✅      | ❔  | ❔       | ✅    |
+| Safari  | ✅     | N/A     | ✅  | N/A      | N/A   |
+| 客户端  | ✅     | ✅      | ✅  | ✅       | ✅    |
+
+**[H.265](../video/HEVC.mdx)** 4:2:0 8位有损 | .mp4
+
+| 浏览器  | macOS | Windows | iOS | Android | Linux |
+|---------|:-----:|:-------:|:---:|:-------:|:-----:|
+| Chrome  | ✅     | ⚠️**      | ❔  | ❔       | ❌    |
+| Firefox | ❌     | ⚠️***      | ❔  | ❔       | ❌    |
+| Safari  | ⚠️*     | N/A     | ⚠️*  | N/A      | N/A   |
+| 客户端  | ✅     | ⚠️**      | ⚠️*  | ✅       | ❌    |
+
+\* 仅支持MP4容器中带有`hvcC`盒的H.265流。可通过在FFmpeg编码命令中添加`-tag:v hvc1`参数实现。
+
+\** 需要硬件加速的HEVC解码支持。
+
+\*** Windows版Firefox需要启用硬件加速HEVC解码支持，并在`about:config`中开启`media.wmf.hevc.enabled`标志。
+
+**[H.265](../video/HEVC.mdx)** 4:2:0 8位有损 | .mov
+
+| 浏览器  | macOS | Windows | iOS | Android | Linux |
+|---------|:-----:|:-------:|:---:|:-------:|:-----:|
+| Chrome  | ✅     | ⚠️**      | ❔  | ❔       | ❌    |
+| Firefox | ❌     | ⚠️***      | ❔  | ❔       | ❌    |
+| Safari  | ⚠️*     | N/A     | ⚠️*  | N/A      | N/A   |
+| 客户端  | ✅     | ⚠️**      | ⚠️*  | ✅       | ❌    |
+
+\* 仅支持MOV容器中带有`hvcC`盒的H.265流。可通过在FFmpeg编码命令中添加`-tag:v hvc1`参数实现。
+
+\** 需要硬件加速的HEVC解码支持。
+
+\*** Windows版Firefox需要启用硬件加速HEVC解码支持，并在`about:config`中开启`media.wmf.hevc.enabled`标志。
+
+**[H.265](../video/HEVC.mdx)** 4:2:0 10位有损 | .mp4
+
+| 浏览器  | macOS | Windows | iOS | Android | Linux |
+|---------|:-----:|:-------:|:---:|:-------:|:-----:|
+| Chrome  | ✅     | ❌      | ❔  | ❔       | ❌    |
+| Firefox | ❌     | ❌       | ❔  | ❔       | ❌    |
+| Safari  | ⚠️*     | N/A     | ⚠️*  | N/A      | N/A   |
+| 客户端  | ✅     | ❌      | ⚠️*  | ✅       | ❌    |
+
+\* 仅支持MP4容器中带有`hvcC`盒的H.265流。可通过在FFmpeg编码命令中添加`-tag:v hvc1`参数实现。
+
+**[H.265](../video/HEVC.mdx)** 4:2:0 10位有损 | .mov
+
+| 浏览器  | macOS | Windows | iOS | Android | Linux |
+|---------|:-----:|:-------:|:---:|:-------:|:-----:|
+| Chrome  | ✅     | ❌      | ❔  | ❔       | ❌    |
+| Firefox | ❌     | ❌       | ❔  | ❔       | ❌    |
+| Safari  | ⚠️*     | N/A     | ⚠️*  | N/A      | N/A   |
+| 客户端  | ✅     | ❌      | ⚠️*  | ✅       | ❌    |
+
+\* 仅支持MOV容器中带有`hvcC`盒的H.265流。可通过在FFmpeg编码命令中添加`-tag:v hvc1`参数实现。

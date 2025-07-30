@@ -1,0 +1,95 @@
+---
+title: 贡献指南
+sidebar_label: ✒️ 贡献指南
+sidebar_position: 13
+---
+
+# 贡献指南
+
+Codec Wiki —— 由社区维护的编解码技术百科全书。
+
+## 贡献前须知
+
+1. 参与Codec Wiki贡献即表示您已阅读并同意我们的《服务条款》《隐私政策》和《行为准则》
+2. 请确保您对所贡献内容有充分理解，并能提供对项目有价值的资料。首次贡献难免存在疏漏，但请务必核查事实准确性
+
+**当前优先事项是完善现有页面的内容。在考虑添加新页面之前，请优先协助补充现有内容**
+
+若不确定条目内容是否完全准确，或认为需要审核，请在条目顶部添加如下提示：
+
+:::caution 待审核
+本条目内容可能不完全准确，正在等待进一步审核以确认信息质量
+:::
+
+若意识到条目内容过短或不完整，请在顶部添加：
+
+:::info 维护中
+本条目内容尚不完整，正在补充完善
+:::
+
+若添加新页面但不确定应包含哪些内容（在尚有大量空白页面待完善时不建议此操作），可添加：
+
+:::danger 需要协助
+本部分内容亟待补充。若您能提供帮助，请参阅[贡献指南](/docs/contribution-guide)开始参与贡献！
+:::
+
+### 联系我们
+
+如需加入"AV1入门指南"Discord服务器与其他贡献者交流，请通过下方组件加入：
+
+<iframe src="https://discord.com/widget?id=1163724583472472138&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+
+我们还提供（即将实现桥接的）Revolt服务器[点击进入](https://rvlt.gg/eSERRhSG)。Revolt是开源的Discord替代方案，详情可参阅[本页](https://github.com/revoltchat/legal/blob/master/About.mdx#communication-is-critical)说明。
+
+## 克隆与提交指引
+**请确保始终从`main`分支克隆并编辑，最终按以下说明将更改推送到`deployment`分支。同时请使用node 18 LTS版本，更高版本可能存在兼容性问题**
+
+*提交前请务必将无关文件添加到.gitignore*
+
+1. 从`main`分支克隆以开始贡献：
+```bash
+% git clone git@github.com:av1-community-contributors/av1-wiki.github.io.git -b main
+```
+
+2. 提交前本地测试更改：
+```bash
+% yarn
+% yarn start
+```
+
+3. 推送更改到`main`分支：
+```bash
+% git add .
+% git commit -m "提交说明"
+% git push -u origin main
+```
+
+4. 部署到`deployment`分支使更改生效：
+```bash
+% GIT_USER=<用户名> DEPLOYMENT_BRANCH=deployment yarn deploy
+```
+
+*Docusaurus信息*
+## 网站架构
+
+本网站使用[Docusaurus 3](https://docusaurus.io/)静态网站生成器构建。
+
+### 安装
+```
+$ yarn
+```
+
+### 本地开发
+```
+$ yarn start
+```
+该命令将启动本地开发服务器并打开浏览器窗口，大多数修改可实时刷新无需重启服务。
+
+### 构建
+```
+$ yarn build
+```
+该命令将生成静态内容到`build`目录，可用于任何静态托管服务。
+
+### 部署
+参见本文开头的初始说明。

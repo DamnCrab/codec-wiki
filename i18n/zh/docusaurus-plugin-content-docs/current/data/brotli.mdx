@@ -1,0 +1,16 @@
+---
+title: brotli
+sidebar_position: 6
+---
+
+# Brotli
+
+:::danger 需要协助
+本节内容亟待补充。如果您能提供帮助，请查看我们的[贡献指南](../contribution-guide.mdx)开始参与贡献！
+:::
+
+Brotli由谷歌于2013年底发布，现已成为网络内容传输的核心技术之一。作为`.woff2`网络开放字体格式的核心组件，它显著减小了网站传输给用户的网页字体体积。与[gzip](../data/gzip.mdx)或[xz](../data/xz.mdx)不同，`.tar.br`格式的Brotli压缩包并不常见，因此这类文件的兼容性有限是可以理解的。但在网页领域，Brotli几乎获得全网支持，全球约96%的网络用户都能使用该技术。
+
+Brotli基于LZ77算法和霍夫曼编码，这与ZIP压缩技术类似。其创新之处在于采用上下文建模技术，允许在同一数据块中对相同字符集使用多组霍夫曼树——这意味着根据被压缩数据的上下文特征，尤其是当数据包含多种类型信息时，能够实现更高效的压缩。
+
+该技术的联合开发者Jyrki Alakuijala曾参与[JPEG-XL](../images/JXL.mdx)和高效[JPEG](../images/JPEG.mdx)编码器jpegli的开发。值得注意的是，JPEG-XL的元数据信息通常就采用Brotli进行压缩处理。

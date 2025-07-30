@@ -1,0 +1,130 @@
+---
+title: WavPack
+sidebar_position: 8
+---
+
+# WavPack
+
+:::danger 需要协助
+本节内容亟待完善。如果您能提供帮助，请参阅我们的[贡献指南](../contribution-guide.mdx)开始参与！
+:::
+
+WavPack是一款开源的音频无损编解码器，支持无损及有损压缩模式，其独特的混合压缩模式可同时压缩有损音频流和无损参考流。该技术由David Bryant于1998年创建，虽未获得如[FLAC](../audio/FLAC.mdx)般的广泛支持，但仍被众多软件采用。
+
+其压缩文件大小介于[FLAC](../audio/FLAC.mdx)与更重型的无损音频压缩器（如TAK、OptimFrog或SAC）之间。相比[FLAC](../audio/FLAC.mdx)，WavPack通常能以略高的资源消耗换取更低的比特率。
+
+## 特性
+
+WavPack是最健壮且功能丰富的无损音频编解码器之一，主要特性包括：
+
+- [混合模式](#hybrid-mode)
+- 支持1-32位整数/浮点音频流
+- 可混流至Matroska `.mkv`容器
+- 最多4096个通道的多声道支持
+- APEv2/ID3v1标签格式
+- 支持RIFF数据块
+- 多线程编码/解码
+- 通过CRC32校验和及可选的原始音频数据MD5哈希实现错误检测
+
+## 混合模式
+
+混合模式与[Opus](../audio/Opus.mdx)等混合编解码器不同。WavPack对有损和无损模式使用相同算法。有损模式下，编码器仅传输递归哥伦布编码残差的单位幅值和符号位。若提供校正文件，解码时可进一步优化这些数据点。
+
+混合模式下WavPack可生成两个输出文件：包含截断（有损）残差的主`.wv`文件，以及包含增强层的`.wvc`校正文件。同时提供这两个文件时解码器可还原原始音频数据，若仅有`.wv`文件则解码为有损音频流。
+
+## 格式解析
+
+与多数无损音频编解码器类似，WavPack仅编码预测误差值。默认`fast`模式下，预测仅是前两个样本的外推。更高级的编码模式会使用复杂预测器。
+
+受限于当时CPU浮点运算的缺陷，WavPack在处理IEEE浮点数据时仅使用整数运算。虽然后续硬件已改进此问题，但这一设计仍便于在无FPU支持的芯片上移植。
+
+编码过程分为三步：
+
+- 联合立体声处理 - 将立体声通道转换为标准差值/平均值，消除声道间相关性
+- 多步去相关 - 根据编码模式选择预测次数和类型，消除音频样本间相关性
+- 递归哥伦布编码残差 - 结合哥伦布编码与Elias伽马编码的新技术，比传统Rice编码更适合音频数据特性
+
+## 编码器
+
+### wavpack
+
+```bash title="默认选项"
+wavpack input.wav -o out.wv
+```
+
+```bash title="快速模式,最低压缩率,包含MD5哈希"
+wavpack input.wav -f -m -o out.wv
+```
+
+```bash title="极慢模式,最高压缩率,8线程"
+wavpack input.wav -hh -x6 --threads=8 -o out.wv
+```
+
+```bash title="有损模式,慢速,240kbps"
+wavpack input.wav -b240 -h -x3 -o out.lsy.wv
+```
+
+```bash title="最高混合压缩,极慢速,4bps"
+wavpack input.wav -b4 -cc -hh -x6 -o out.hyb.wv
+```
+
+虽然`wvunpack`可用于解码`.wv`文件，但多数主流[媒体播放器](../video-players.mdx)（如MPV或VLC）已提供（有限）WavPack支持。
+
+参数说明：
+
+- `-f` 快速编码/解码（文件较大）
+- `-h` 慢速编码/解码（较高压缩率）
+- `-hh` 极慢编码/解码（最高压缩率）
+
+- `-x0` 禁用额外滤镜
+- `-x3` 尝试所有预设滤镜（较慢，更高压缩率）
+- `-x6` 生成自定义滤镜（极慢，最佳压缩率）
+
+- `-b240` 有损模式，设为`240kbps`（有效范围`24`-`9600`，但不会低于`2 bits/sample`）
+- `-b4` 有损模式，设为`4 bits/sample`（有效范围`2`-`23.9`）
+
+- `-c` 启用混合模式（生成`.wv`和`.wvc`文件）
+- `-cc` 优化混合模式（可能降低解码速度）
+
+- `-m` 在输出文件中包含原始音频的MD5哈希
+- `--threads=8` 使用`8`线程（有效范围`1`-`12`）
+
+完整参数说明详见[官方手册](https://www.wavpack.com/wavpack_doc.html)。
+
+### FFmpeg
+
+[FFmpeg](../utilities/ffmpeg.mdx)内置的WavPack编码器仅支持单线程，且不支持有损或[混合模式](#hybrid-mode)。通过`-compression_level`参数控制压缩等级。
+
+```bash title="最快速度,最低压缩率"
+ffmpeg -i input.wav -compression_level 0 out.wv
+```
+
+```bash title="最慢速度,最高压缩率"
+ffmpeg -i input.wav -compression_level 8 out.wv
+```
+
+完整参数参见[FFmpeg文档](https://www.ffmpeg.org/ffmpeg-codecs.html#wavpack)。
+
+## 应用现状
+
+截至2024年，WavPack已基本被[FLAC](../audio/FLAC.mdx)取代，后者成为网络和硬件领域的无损音频事实标准。
+
+多数媒体软件对WavPack的实现不完整：FFmpeg不支持[混合模式](#hybrid-mode)，其他播放器也普遍存在兼容问题。在`.mkv`容器中的应用也存在[缺陷](https://www.reddit.com/r/ffmpeg/comments/tpptoi/using_hybrid_wavpack_in_video/)。
+
+若无混合模式支持，WavPack相较普及的[FLAC](../audio/FLAC.mdx)优势有限。虽然压缩率略高，但音乐流媒体平台更倾向选择标准化程度高且支持`.mp4`容器中`DRM`的FLAC（这对现代网络环境至关重要）。
+
+即使混合模式获得更好支持，其最低`2 bits/sample`的有损设置（立体声约`200kbps`）仍偏高。且因缺乏心理声学模型，其有损模式音质逊于现代编解码器如[Opus](../audio/Opus.mdx)或[AAC](../audio/AAC.mdx)。
+
+## 备注
+- WavPack是最早的无损音频压缩技术之一，早于Monkey's Audio(2000)、[FLAC](../audio/FLAC.mdx)(2001)、OptimFROG(2002)和[ALAC](../audio/ALAC.mdx)(2004)
+- OptimFROG Dualstream是类似WavPack混合模式的功能，但推出时间较晚
+- 部分设备提供WavPack[硬件支持](https://hydrogenaud.io/index.php/topic,119143.0.html)
+
+**参考文献:**
+- [WavPack压缩技术白皮书](https://www.wavpack.com/WavPack.pdf)
+- [WavPack技术文档](https://www.wavpack.com/technical.htm)
+- [旧版WavPack格式规范](https://web.archive.org/web/20160705230053/http://www.wavpack.com/file_format.txt)
+- [Hydrogenaudio维基](https://wiki.hydrogenaud.io/index.php?title=WavPack)
+- [Multimedia.cx维基](https://wiki.multimedia.cx/index.php/WavPack)
+- [维基百科](https://en.wikipedia.org/wiki/WavPack)
+- [FFmpeg源码](https://ffmpeg.org/doxygen/3.3/wavpackenc_8c_source.html)
